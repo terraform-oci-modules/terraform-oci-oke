@@ -1,0 +1,28 @@
+skip-check:
+  # CKV_TF_1: Registry module refs should use commit hashes. Terraform Registry sources use
+  #   semantic version constraints (version = "~> x.y"), not commit hashes.
+  - CKV_TF_1
+  # CKV_OCI_21: NSG ingress rules default to stateful (stateless = false), which is intentional,
+  #   matching the sibling terraform-oci-compute-instance/-vcn convention (CKV_OCI_17 there).
+  #   OCI stateful rules automatically allow return traffic; stateless rules would require
+  #   callers to define explicit reverse egress rules for every ingress rule. Users who need
+  #   stateless rules can set stateless = true per-rule in *_nsg_ingress_rules.
+  - CKV_OCI_21
+  # CKV2_OCI_6: Kubernetes PodSecurityPolicy (the OKE admission_controller_options field this
+  #   check wants) was removed upstream in Kubernetes 1.25. This module's examples target
+  #   v1.33.1 and OKE's minimum supported versions are all well past 1.25, so enabling it would
+  #   have no effect on any cluster this module can realistically create.
+  - CKV2_OCI_6
+  # CKV2_OCI_3: This module intentionally does not own the full OKE NSG ruleset - control-plane
+  #   /worker/pod NSGs are optional pass-through inputs (control_plane_nsg_ids, per-pool
+  #   nsg_ids/pod_nsg_ids). Build the recommended rulesets with the sibling terraform-oci-vcn
+  #   module; see docs/network_connectivity.md.
+  - CKV2_OCI_3
+  # CKV2_OCI_5: node_config_details.is_pv_encryption_in_transit_enabled correctly defaults to
+  #   true everywhere (modules/node-pool, modules/self-managed-node-pool, the node_pools /
+  #   self_managed_node_pools object-type variables, and both wrappers all default true; verified
+  #   passing when the node-pool submodule is scanned in isolation). Checkov's graph check can't
+  #   resolve the optional(bool, true) object-attribute default through the for_each + nested
+  #   module-call indirection the root module and wrappers use, so it still reports these as
+  #   unresolved/failed at that level - a tool limitation, not an actual gap.
+  - CKV2_OCI_5
