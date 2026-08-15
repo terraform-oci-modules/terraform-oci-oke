@@ -27,6 +27,11 @@ variable "cni_type" {
   type        = string
 }
 
+variable "cluster_type" {
+  description = "Cluster tier: \"basic\" or \"enhanced\". node_cycling requires \"enhanced\"."
+  type        = string
+}
+
 variable "ssh_public_key" {
   description = "SSH public key authorized on worker nodes."
   type        = string
@@ -204,11 +209,11 @@ variable "force_node_delete" {
 }
 
 variable "node_cycling" {
-  description = "Node pool cycling configuration (enhanced clusters)."
+  description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\"."
   type = object({
     enabled             = optional(bool, false)
     maximum_surge       = optional(string, "1")
-    maximum_unavailable = optional(string, "0")
+    maximum_unavailable = optional(string, "1")
     cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])
   })
   default  = {}

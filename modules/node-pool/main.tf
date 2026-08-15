@@ -141,6 +141,11 @@ resource "oci_containerengine_node_pool" "managed" {
       condition     = !local.is_npn || var.pod_subnet_id != null
       error_message = "pod_subnet_id is required for npn (OCI_VCN_IP_NATIVE) node pools (pool ${var.name})."
     }
+
+    precondition {
+      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
+    }
   }
 }
 
@@ -265,6 +270,11 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     precondition {
       condition     = !local.is_npn || var.pod_subnet_id != null
       error_message = "pod_subnet_id is required for npn (OCI_VCN_IP_NATIVE) node pools (pool ${var.name})."
+    }
+
+    precondition {
+      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
   }
 }
