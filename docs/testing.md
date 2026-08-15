@@ -4,7 +4,7 @@ The test suite lives in `tests/`: one `.tftest.hcl` file per example, plus `unit
 
 ## Prerequisites
 
-- Terraform >= 1.6
+- Terraform >= 1.7
 - OCI credentials configured, any of:
   - Environment variables (`OCI_CLI_TENANCY`, `OCI_CLI_USER`, `OCI_CLI_FINGERPRINT`, `OCI_CLI_KEY_FILE`, `OCI_CLI_REGION`)
   - A config file at `~/.oci/config`
@@ -87,6 +87,10 @@ security lists, in [service_load_balancers.md](service_load_balancers.md).
 > Terraform, so leaving it behind blocks subnet deletion and orphans a billable resource.
 
 ## Known issue: `enhanced` clusters can leave resources stuck on teardown
+
+> `node_cycling` (rolling node upgrades on managed pools) is a separate `enhanced`-only
+> requirement, unrelated to the teardown issue below. See
+> [docs/upgrades.md](upgrades.md).
 
 Verified by running every apply-based test at least once against a real tenancy (2026-08-06).
 `simple`, `managed-node-pool`, and `self-managed-node-pool` (all `cluster_type = "basic"`) applied

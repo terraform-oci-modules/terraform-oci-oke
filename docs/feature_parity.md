@@ -124,7 +124,7 @@ submodule with this module's `node_pools` object type:
 | `taints`                                             | **not available on managed pools**               | `oci_containerengine_node_pool` has no taints argument. Available on `virtual_node_pools` only. See [class A](#gap-class-a-no-oke-equivalent-exists) |
 | `capacity_type = "SPOT"`                             | `preemptible_config`                             |                                                              |
 | `capacity_reservation_specification`                 | `capacity_reservation_id`                        | OKE requires a single AD when set (enforced by a precondition) |
-| `update_config`                                      | `node_cycling`                                   | `maximum_surge` / `maximum_unavailable` / `cycle_modes`      |
+| `update_config`                                      | `node_cycling`                                   | `maximum_surge` / `maximum_unavailable` / `cycle_modes`; requires `cluster_type = "enhanced"`, see [docs/upgrades.md](upgrades.md) |
 | `remote_access` / `key_name`                         | `ssh_authorized_keys` (cluster-wide)             | OKE sets the key per pool from one cluster-level input       |
 | `vpc_security_group_ids`                             | `nsg_ids`                                        |                                                              |
 | `pre_bootstrap_user_data`, `post_bootstrap_user_data`, `bootstrap_extra_args`, `cloudinit_pre_nodeadm` | `node_metadata` (managed) / `cloud_init` (self-managed), with cluster-wide defaults from the root `worker_metadata` | OKE managed pools accept metadata, not a rendered user-data template |

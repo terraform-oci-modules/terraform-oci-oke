@@ -54,6 +54,12 @@ module "oke" {
 Virtual node pools require `cluster_type = "enhanced"` and `cni_type = "npn"`.
 OKE-managed addons (`addons`) require `cluster_type = "enhanced"`.
 
+> **Bumping `kubernetes_version` does not roll already-running nodes by default** -
+> only the pool's template/image updates immediately. Managed pools need
+> `node_cycling.enabled = true` (which itself requires `cluster_type = "enhanced"`) to
+> actually replace nodes; self-managed pools have no automated rolling-upgrade path at
+> all. See [docs/upgrades.md](docs/upgrades.md) for the full, live-verified behavior.
+
 > **`enhanced` clusters have known OCI-side reliability issues on this
 > module's tested tenancy**, independent of anything this module configures:
 > `addons` creation can race with OKE's own addon provisioning on a
