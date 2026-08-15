@@ -16,6 +16,7 @@ module "node_pool" {
   cluster_id     = local.cluster_id
   compartment_id = coalesce(each.value.compartment_id, var.compartment_id)
   cni_type       = var.cni_type
+  cluster_type   = var.cluster_type
   ssh_public_key = var.ssh_authorized_keys
   kubeproxy_mode = var.kubeproxy_mode
 

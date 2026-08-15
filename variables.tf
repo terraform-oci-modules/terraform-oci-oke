@@ -501,7 +501,7 @@ variable "node_pools" {
     node_cycling = optional(object({
       enabled             = optional(bool, false)
       maximum_surge       = optional(string, "1")
-      maximum_unavailable = optional(string, "0")
+      maximum_unavailable = optional(string, "1")
       cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])
     }), {})
     freeform_tags = optional(map(string), {})

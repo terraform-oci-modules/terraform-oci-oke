@@ -9,6 +9,7 @@ module "wrapper" {
   boot_volume_size        = try(each.value.boot_volume_size, var.defaults.boot_volume_size, 50)
   capacity_reservation_id = try(each.value.capacity_reservation_id, var.defaults.capacity_reservation_id, null)
   cluster_id              = try(each.value.cluster_id, var.defaults.cluster_id)
+  cluster_type            = try(each.value.cluster_type, var.defaults.cluster_type)
   cni_type                = try(each.value.cni_type, var.defaults.cni_type)
   compartment_id          = try(each.value.compartment_id, var.defaults.compartment_id)
   defined_tags            = try(each.value.defined_tags, var.defaults.defined_tags, {})
