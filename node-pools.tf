@@ -61,7 +61,10 @@ module "node_pool" {
   preemptible_config      = each.value.preemptible_config
   eviction_grace_duration = each.value.eviction_grace_duration
   force_node_delete       = each.value.force_node_delete
+  force_node_action       = each.value.force_node_action
+  network_launch_type     = each.value.network_launch_type
   node_cycling            = each.value.node_cycling
+  timeouts                = each.value.timeouts
 
   freeform_tags = merge(var.tags, var.worker_tags, each.value.freeform_tags)
   defined_tags  = merge(var.defined_tags, var.worker_defined_tags, each.value.defined_tags)

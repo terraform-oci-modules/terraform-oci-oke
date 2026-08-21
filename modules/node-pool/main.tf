@@ -23,15 +23,16 @@ locals {
 resource "oci_containerengine_node_pool" "managed" {
   count = var.autoscale ? 0 : 1
 
-  cluster_id         = var.cluster_id
-  compartment_id     = var.compartment_id
-  kubernetes_version = var.kubernetes_version
-  name               = var.name
-  node_shape         = var.shape
-  ssh_public_key     = var.ssh_public_key
-  freeform_tags      = var.freeform_tags
-  defined_tags       = var.defined_tags
-  node_metadata      = local.node_metadata
+  cluster_id          = var.cluster_id
+  compartment_id      = var.compartment_id
+  kubernetes_version  = var.kubernetes_version
+  name                = var.name
+  node_shape          = var.shape
+  network_launch_type = var.network_launch_type
+  ssh_public_key      = var.ssh_public_key
+  freeform_tags       = var.freeform_tags
+  defined_tags        = var.defined_tags
+  node_metadata       = local.node_metadata
 
   node_config_details {
     size                                = var.size
@@ -97,6 +98,7 @@ resource "oci_containerengine_node_pool" "managed" {
   node_eviction_node_pool_settings {
     eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
     is_force_delete_after_grace_duration = var.force_node_delete
+    is_force_action_after_grace_duration = var.force_node_action
   }
 
   dynamic "node_pool_cycling_details" {
@@ -122,8 +124,11 @@ resource "oci_containerengine_node_pool" "managed" {
   # ceiling is 60m (PT60M) and drains have been observed to overrun regardless.
   # The provider's default delete timeout is shorter than that ceiling, so a
   # slow-but-otherwise-healthy drain can be aborted by Terraform prematurely.
+  # var.timeouts.delete defaults to "75m", preserving that behavior.
   timeouts {
-    delete = "75m"
+    create = var.timeouts.create
+    update = var.timeouts.update
+    delete = var.timeouts.delete
   }
 
   lifecycle {
@@ -152,15 +157,16 @@ resource "oci_containerengine_node_pool" "managed" {
 resource "oci_containerengine_node_pool" "autoscaled" {
   count = var.autoscale ? 1 : 0
 
-  cluster_id         = var.cluster_id
-  compartment_id     = var.compartment_id
-  kubernetes_version = var.kubernetes_version
-  name               = var.name
-  node_shape         = var.shape
-  ssh_public_key     = var.ssh_public_key
-  freeform_tags      = var.freeform_tags
-  defined_tags       = var.defined_tags
-  node_metadata      = local.node_metadata
+  cluster_id          = var.cluster_id
+  compartment_id      = var.compartment_id
+  kubernetes_version  = var.kubernetes_version
+  name                = var.name
+  node_shape          = var.shape
+  network_launch_type = var.network_launch_type
+  ssh_public_key      = var.ssh_public_key
+  freeform_tags       = var.freeform_tags
+  defined_tags        = var.defined_tags
+  node_metadata       = local.node_metadata
 
   node_config_details {
     size                                = var.size
@@ -226,6 +232,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   node_eviction_node_pool_settings {
     eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
     is_force_delete_after_grace_duration = var.force_node_delete
+    is_force_action_after_grace_duration = var.force_node_action
   }
 
   dynamic "node_pool_cycling_details" {
@@ -251,8 +258,11 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   # ceiling is 60m (PT60M) and drains have been observed to overrun regardless.
   # The provider's default delete timeout is shorter than that ceiling, so a
   # slow-but-otherwise-healthy drain can be aborted by Terraform prematurely.
+  # var.timeouts.delete defaults to "75m", preserving that behavior.
   timeouts {
-    delete = "75m"
+    create = var.timeouts.create
+    update = var.timeouts.update
+    delete = var.timeouts.delete
   }
 
   lifecycle {

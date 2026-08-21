@@ -80,6 +80,12 @@ variable "shape" {
   type        = string
 }
 
+variable "network_launch_type" {
+  description = "Advanced node pool network launch type override. Provider-validated; leave null for the OCI default."
+  type        = string
+  default     = null
+}
+
 variable "ocpus" {
   description = "OCPUs per node (Flex shapes only)."
   type        = number
@@ -208,6 +214,13 @@ variable "force_node_delete" {
   nullable    = false
 }
 
+variable "force_node_action" {
+  description = "Force the eviction action (cordon/drain) itself after the grace duration, not just the delete. Maps to is_force_action_after_grace_duration."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "node_cycling" {
   description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\"."
   type = object({
@@ -215,6 +228,22 @@ variable "node_cycling" {
     maximum_surge       = optional(string, "1")
     maximum_unavailable = optional(string, "1")
     cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])
+  })
+  default  = {}
+  nullable = false
+}
+
+variable "timeouts" {
+  description = <<-EOT
+    Per-pool create/update/delete timeouts. delete defaults to "75m" - OCI's
+    node eviction grace period ceiling is 60m (PT60M) and drains have been
+    observed to overrun the provider's own default delete timeout, aborting an
+    otherwise-healthy drain. See docs/testing.md.
+  EOT
+  type = object({
+    create = optional(string)
+    update = optional(string)
+    delete = optional(string, "75m")
   })
   default  = {}
   nullable = false

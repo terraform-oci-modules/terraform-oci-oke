@@ -32,6 +32,21 @@ output "cluster_all_attributes" {
   value       = local.cluster
 }
 
+output "cluster_service_cidr" {
+  description = "Resolved Kubernetes service CIDR block. Maps to EKS cluster_service_cidr."
+  value       = try(local.cluster.options[0].kubernetes_network_config[0].services_cidr, null)
+}
+
+output "cluster_ip_families" {
+  description = <<-EOT
+    Resolved IP families for the cluster (e.g. ["IPv4"] or ["IPv4", "IPv6"]).
+    EKS's analog output, cluster_ip_family, is a single value; OCI's
+    ip_families is a list, so this output stays plural and list-typed to match
+    the OCI API rather than force a misleading singular name.
+  EOT
+  value       = try(local.cluster.options[0].ip_families, null)
+}
+
 ################################################################################
 # OIDC / identity
 ################################################################################

@@ -20,4 +20,5 @@ module "wrapper" {
   size                 = try(each.value.size, var.defaults.size, 1)
   subnet_id            = try(each.value.subnet_id, var.defaults.subnet_id)
   taints               = try(each.value.taints, var.defaults.taints, {})
+  timeouts             = try(each.value.timeouts, var.defaults.timeouts, {})
 }

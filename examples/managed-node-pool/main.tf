@@ -74,6 +74,14 @@ module "oke" {
       size                 = 2
       availability_domains = [1, 2]
       node_labels          = { "pool" = "fixed" }
+
+      # Force both the eviction action and the delete itself once the grace
+      # duration elapses, and give this pool a shorter delete timeout than the
+      # module's 75m default.
+      force_node_action = true
+      timeouts = {
+        delete = "45m"
+      }
     }
     # Autoscaler-managed pool: size is ignored by Terraform after creation.
     autoscaled = {

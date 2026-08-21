@@ -33,6 +33,7 @@ module "virtual_node_pool" {
 
   node_labels = each.value.node_labels
   taints      = each.value.taints
+  timeouts    = each.value.timeouts
 
   freeform_tags = merge(var.tags, var.worker_tags, each.value.freeform_tags)
   defined_tags  = merge(var.defined_tags, var.worker_defined_tags, each.value.defined_tags)

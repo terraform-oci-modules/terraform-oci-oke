@@ -102,3 +102,19 @@ variable "defined_tags" {
   default     = {}
   nullable    = false
 }
+
+variable "timeouts" {
+  description = <<-EOT
+    Per-pool create/update/delete timeouts. delete defaults to "75m" - OCI's
+    node eviction grace period ceiling is 60m (PT60M) and drains have been
+    observed to overrun the provider's own default delete timeout, aborting an
+    otherwise-healthy drain. See docs/testing.md.
+  EOT
+  type = object({
+    create = optional(string)
+    update = optional(string)
+    delete = optional(string, "75m")
+  })
+  default  = {}
+  nullable = false
+}
