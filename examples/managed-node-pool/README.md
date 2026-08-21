@@ -46,5 +46,7 @@ No resources.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | The OCID of the OKE cluster |
+| <a name="output_cluster_ip_families"></a> [cluster\_ip\_families](#output\_cluster\_ip\_families) | Resolved IP families for the cluster |
+| <a name="output_cluster_service_cidr"></a> [cluster\_service\_cidr](#output\_cluster\_service\_cidr) | Resolved Kubernetes service CIDR block |
 | <a name="output_node_pool_ids"></a> [node\_pool\_ids](#output\_node\_pool\_ids) | The OCIDs of the managed node pools |
 <!-- END_TF_DOCS -->

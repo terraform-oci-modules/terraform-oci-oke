@@ -56,9 +56,12 @@ resource "oci_containerengine_virtual_node_pool" "this" {
   # this resource exposes no eviction settings at all, so the grace period cannot
   # be lowered from Terraform. The provider's default delete timeout is shorter
   # than that ceiling, so a slow-but-otherwise-healthy drain can be aborted by
-  # Terraform prematurely.
+  # Terraform prematurely. var.timeouts.delete defaults to "75m", preserving
+  # that behavior.
   timeouts {
-    delete = "75m"
+    create = var.timeouts.create
+    update = var.timeouts.update
+    delete = var.timeouts.delete
   }
 
   lifecycle {

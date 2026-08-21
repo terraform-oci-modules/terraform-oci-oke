@@ -14,6 +14,7 @@ module "wrapper" {
   compartment_id          = try(each.value.compartment_id, var.defaults.compartment_id)
   defined_tags            = try(each.value.defined_tags, var.defaults.defined_tags, {})
   eviction_grace_duration = try(each.value.eviction_grace_duration, var.defaults.eviction_grace_duration, 300)
+  force_node_action       = try(each.value.force_node_action, var.defaults.force_node_action, false)
   force_node_delete       = try(each.value.force_node_delete, var.defaults.force_node_delete, false)
   freeform_tags           = try(each.value.freeform_tags, var.defaults.freeform_tags, {})
   image_id                = try(each.value.image_id, var.defaults.image_id)
@@ -22,6 +23,7 @@ module "wrapper" {
   max_pods_per_node       = try(each.value.max_pods_per_node, var.defaults.max_pods_per_node, 31)
   memory                  = try(each.value.memory, var.defaults.memory, 16)
   name                    = try(each.value.name, var.defaults.name)
+  network_launch_type     = try(each.value.network_launch_type, var.defaults.network_launch_type, null)
   node_cycling            = try(each.value.node_cycling, var.defaults.node_cycling, {})
   node_labels             = try(each.value.node_labels, var.defaults.node_labels, {})
   node_metadata           = try(each.value.node_metadata, var.defaults.node_metadata, {})
@@ -36,5 +38,6 @@ module "wrapper" {
   size                    = try(each.value.size, var.defaults.size, 1)
   ssh_public_key          = try(each.value.ssh_public_key, var.defaults.ssh_public_key, null)
   subnet_id               = try(each.value.subnet_id, var.defaults.subnet_id)
+  timeouts                = try(each.value.timeouts, var.defaults.timeouts, {})
   volume_kms_key_id       = try(each.value.volume_kms_key_id, var.defaults.volume_kms_key_id, null)
 }
