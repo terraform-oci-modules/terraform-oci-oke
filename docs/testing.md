@@ -86,7 +86,7 @@ security lists, in [service_load_balancers.md](service_load_balancers.md).
 > Delete the `Service` before `terraform destroy`. The load balancer belongs to the Service, not to
 > Terraform, so leaving it behind blocks subnet deletion and orphans a billable resource.
 
-## Known issue: `enhanced` clusters can leave resources stuck on teardown
+## Known issue: node pool teardown can hang or fail on any cluster type
 
 > `node_cycling` (rolling node upgrades on managed pools) is a separate `enhanced`-only
 > requirement, unrelated to the teardown issue below. See
@@ -94,17 +94,28 @@ security lists, in [service_load_balancers.md](service_load_balancers.md).
 
 Verified by running every apply-based test at least once against a real tenancy (2026-08-06).
 `simple`, `managed-node-pool`, and `self-managed-node-pool` (all `cluster_type = "basic"`) applied
-and destroyed cleanly. `virtual-node-pool`, `cluster-addons`, and `complete` (all
-`cluster_type = "enhanced"`) each hit at least one of two OCI-platform-side failures, 100%
-correlated with `enhanced` in this testing:
+and destroyed cleanly that round. `virtual-node-pool`, `cluster-addons`, and `complete` (all
+`cluster_type = "enhanced"`) each hit at least one of two OCI-platform-side failures that same
+round, which at the time looked 100% correlated with `enhanced`.
+
+**Update (2026-08-21):** that correlation does not hold. Two consecutive live runs of
+`managed-node-pool` (`cluster_type = "basic"`) each hit the node-pool-stuck-in-`NEEDS_ATTENTION`
+failure below - a different pool each time (`autoscaled` the first run, `fixed` the second), both
+otherwise-default configuration. This is intermittent OCI-platform-side flakiness that can affect
+managed node pools on any cluster type, not just `enhanced`. The manual force-delete runbook below
+is the fix regardless of `cluster_type`.
 
 1. **Node/virtual-node-pool deletion hangs or fails.** OCI cordons and drains pods before
    terminating nodes. For **managed** node pools that grace period *is* configurable, and this
    module already sets it to 5 minutes (`PT5M`) through the per-pool `eviction_grace_duration`
    input (OCI's own ceiling is 60 minutes); for **virtual** node pools the provider exposes no
-   eviction settings at all. The hangs observed here happened anyway, with the pool ending up in
-   `NEEDS_ATTENTION` with an empty error list on both the pool and its nodes and no diagnostic
-   detail available, so the configured grace duration is not the cause.
+   eviction settings at all. The hangs observed in the original 2026-08-06 testing happened anyway,
+   with the pool ending up in `NEEDS_ATTENTION` with an empty error list on both the pool and its
+   nodes and no diagnostic detail available, so the configured grace duration was not the cause.
+   The 2026-08-21 recurrence (see above) surfaced an actual work-request error message this time -
+   `"1 nodes(s) pod eviction timeout"` - rather than an empty error list, so this may be the same
+   underlying issue with more diagnostic detail available, or a related-but-distinct failure mode.
+   Either way the fix is the same manual force-delete below.
 
    `terraform test`'s own teardown does not retry this and leaves the cluster, node pool/virtual
    node pool, NSGs, and full VCN (subnets, gateways, route tables) in the compartment. This module
