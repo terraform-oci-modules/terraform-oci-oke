@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.1.1...v0.2.0) (2026-08-21)
+
+### Features
+
+* Add cluster CIDR/IP family outputs, network_launch_type, force_node_action, and configurable pool timeouts ([#2](https://github.com/terraform-oci-modules/terraform-oci-oke/issues/2)) ([04d8116](https://github.com/terraform-oci-modules/terraform-oci-oke/commit/04d8116180d9352db4782687ff01c0a55a0e8d80))
+
 ## [0.1.1](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.1.0...v0.1.1) (2026-08-15)
 
 ### Bug Fixes
