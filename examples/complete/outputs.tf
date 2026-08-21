@@ -18,6 +18,11 @@ output "node_pool_ids" {
   value       = module.oke.node_pool_ids
 }
 
+output "np_managed_secondary_vnics" {
+  description = "Secondary VNIC attachments on the np-managed pool's node_pool resource"
+  value       = module.oke.node_pools["np-managed"].secondary_vnics
+}
+
 output "virtual_node_pool_ids" {
   description = "The OCIDs of the virtual node pools"
   value       = module.oke.virtual_node_pool_ids

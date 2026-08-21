@@ -20,7 +20,7 @@ locals {
 # VCN (supporting resource)
 #
 # public:  control plane endpoint (public, for demo reachability) + service load balancer
-# private: [0] workers, [1] pods (VCN-native / npn CNI)
+# private: [0] workers, [1] pods (VCN-native / npn CNI), [2] secondary VNIC
 ################################################################################
 
 module "vcn" {
@@ -35,6 +35,7 @@ module "vcn" {
   private_subnets = [
     cidrsubnet(local.vcn_cidr, 4, 1),
     cidrsubnet(local.vcn_cidr, 2, 1),
+    cidrsubnet(local.vcn_cidr, 4, 2),
   ]
 
   enable_nat_gateway     = true
@@ -92,7 +93,10 @@ module "oke" {
     CertManager             = { override_existing = true }
   }
 
-  # Managed node pool (VCN-native pods).
+  # Managed node pool (VCN-native pods). Also demonstrates a secondary VNIC
+  # attached to every node, e.g. for a dedicated monitoring/management
+  # network. Requires cni_type = "npn"; the OCI API rejects secondary_vnics
+  # for Flannel Overlay clusters.
   node_pools = {
     np-managed = {
       shape                = "VM.Standard.E4.Flex"
@@ -102,6 +106,10 @@ module "oke" {
       availability_domains = [1, 2]
       max_pods_per_node    = 31
       node_labels          = { "pool" = "managed" }
+
+      secondary_vnics = [
+        { subnet_id = module.vcn.private_subnets[2] }
+      ]
     }
   }
 

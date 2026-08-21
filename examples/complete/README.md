@@ -60,5 +60,6 @@ No resources.
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | The OCID of the OKE cluster |
 | <a name="output_cluster_oidc_discovery_endpoint"></a> [cluster\_oidc\_discovery\_endpoint](#output\_cluster\_oidc\_discovery\_endpoint) | The OIDC discovery endpoint of the cluster |
 | <a name="output_node_pool_ids"></a> [node\_pool\_ids](#output\_node\_pool\_ids) | The OCIDs of the managed node pools |
+| <a name="output_np_managed_secondary_vnics"></a> [np\_managed\_secondary\_vnics](#output\_np\_managed\_secondary\_vnics) | Secondary VNIC attachments on the np-managed pool's node\_pool resource |
 | <a name="output_virtual_node_pool_ids"></a> [virtual\_node\_pool\_ids](#output\_virtual\_node\_pool\_ids) | The OCIDs of the virtual node pools |
 <!-- END_TF_DOCS -->

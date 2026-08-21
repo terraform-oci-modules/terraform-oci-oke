@@ -25,4 +25,8 @@ run "creates_complete_cluster" {
     condition     = length(output.cluster_addons) == 1
     error_message = "CoreDNS addon must be created"
   }
+  assert {
+    condition     = length(output.np_managed_secondary_vnics) == 1
+    error_message = "np-managed pool must have one secondary VNIC attached"
+  }
 }

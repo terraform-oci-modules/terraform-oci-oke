@@ -158,6 +158,11 @@ variable "secondary_vnics" {
     secondary_network_interface concept elsewhere, OCI does not run DHCP on
     these interfaces; the guest OS still needs to configure them.
 
+    Requires cni_type = "npn" (OCI_VCN_IP_NATIVE) - the OCI API rejects this
+    field outright for Flannel Overlay clusters ("Invalid secondaryVnics: This
+    field is not allowed for Flannel Overlay"), enforced here via a
+    precondition.
+
     Example:
       secondary_vnics = [
         { subnet_id = "ocid1.subnet.oc1..." }

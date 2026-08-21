@@ -172,6 +172,11 @@ resource "oci_containerengine_node_pool" "managed" {
       condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
+
+    precondition {
+      condition     = length(var.secondary_vnics) == 0 || local.is_npn
+      error_message = "secondary_vnics requires cni_type = \"npn\" (OCI_VCN_IP_NATIVE); the OCI API rejects it for Flannel Overlay clusters (pool ${var.name})."
+    }
   }
 }
 
@@ -327,6 +332,11 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     precondition {
       condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
+    }
+
+    precondition {
+      condition     = length(var.secondary_vnics) == 0 || local.is_npn
+      error_message = "secondary_vnics requires cni_type = \"npn\" (OCI_VCN_IP_NATIVE); the OCI API rejects it for Flannel Overlay clusters (pool ${var.name})."
     }
   }
 }

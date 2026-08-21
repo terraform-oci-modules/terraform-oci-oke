@@ -21,8 +21,4 @@ run "creates_managed_node_pools" {
     condition     = length(output.cluster_ip_families) > 0
     error_message = "Cluster must have at least one resolved IP family"
   }
-  assert {
-    condition     = length(output.autoscaled_pool_secondary_vnics) == 1
-    error_message = "Autoscaled pool must have one secondary VNIC attached"
-  }
 }

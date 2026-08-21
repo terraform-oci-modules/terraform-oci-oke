@@ -24,11 +24,8 @@ module "vcn" {
   compartment_id = var.compartment_id
   vcn_cidr_block = local.vcn_cidr
 
-  public_subnets = [cidrsubnet(local.vcn_cidr, 4, 0)]
-  private_subnets = [
-    cidrsubnet(local.vcn_cidr, 4, 1),
-    cidrsubnet(local.vcn_cidr, 4, 2),
-  ]
+  public_subnets  = [cidrsubnet(local.vcn_cidr, 4, 0)]
+  private_subnets = [cidrsubnet(local.vcn_cidr, 4, 1)]
 
   enable_nat_gateway     = true
   single_nat_gateway     = true
@@ -87,8 +84,6 @@ module "oke" {
       }
     }
     # Autoscaler-managed pool: size is ignored by Terraform after creation.
-    # Also demonstrates a secondary VNIC attached to every node in the pool,
-    # e.g. for a dedicated monitoring/management network.
     autoscaled = {
       shape                = "VM.Standard.E4.Flex"
       ocpus                = 2
@@ -97,10 +92,6 @@ module "oke" {
       autoscale            = true
       availability_domains = [1]
       node_labels          = { "pool" = "autoscaled" }
-
-      secondary_vnics = [
-        { subnet_id = module.vcn.private_subnets[1] }
-      ]
     }
   }
 
