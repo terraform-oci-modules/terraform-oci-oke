@@ -145,6 +145,40 @@ variable "nsg_ids" {
   nullable    = false
 }
 
+variable "secondary_vnics" {
+  description = <<-EOT
+    Additional VNICs attached to every node in this pool, e.g. for a dedicated
+    monitoring/management network separate from the primary worker VNIC. Maps
+    to the EKS launch template's network_interfaces (multi-NIC workers).
+
+    Unlike modules/node-pool's own attachment (single instance, post-launch),
+    this is an oci_containerengine_node_pool-native block, so OCI attaches the
+    same set of secondary VNICs to every node the pool launches, including
+    ones created later by scale-out. As with the standalone
+    secondary_network_interface concept elsewhere, OCI does not run DHCP on
+    these interfaces; the guest OS still needs to configure them.
+
+    Example:
+      secondary_vnics = [
+        { subnet_id = "ocid1.subnet.oc1..." }
+      ]
+  EOT
+  type = list(object({
+    display_name           = optional(string)
+    nic_index              = optional(number, 0)
+    subnet_id              = string
+    assign_public_ip       = optional(bool, false)
+    assign_ipv6ip          = optional(bool, false)
+    nsg_ids                = optional(list(string), [])
+    skip_source_dest_check = optional(bool, false)
+    ip_count               = optional(number)
+    freeform_tags          = optional(map(string), {})
+    defined_tags           = optional(map(string), {})
+  }))
+  default  = []
+  nullable = false
+}
+
 variable "pod_subnet_id" {
   description = "Pod subnet OCID (npn CNI only)."
   type        = string

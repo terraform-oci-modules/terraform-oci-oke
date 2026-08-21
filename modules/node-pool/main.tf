@@ -119,6 +119,27 @@ resource "oci_containerengine_node_pool" "managed" {
     }
   }
 
+  dynamic "secondary_vnics" {
+    for_each = var.secondary_vnics
+    content {
+      display_name = secondary_vnics.value.display_name
+      nic_index    = secondary_vnics.value.nic_index
+
+      create_vnic_details {
+        subnet_id              = secondary_vnics.value.subnet_id
+        assign_public_ip       = secondary_vnics.value.assign_public_ip
+        assign_ipv6ip          = secondary_vnics.value.assign_ipv6ip
+        nsg_ids                = secondary_vnics.value.nsg_ids
+        skip_source_dest_check = secondary_vnics.value.skip_source_dest_check
+        ip_count               = secondary_vnics.value.ip_count
+        display_name           = secondary_vnics.value.display_name
+
+        freeform_tags = merge(var.freeform_tags, secondary_vnics.value.freeform_tags)
+        defined_tags  = merge(var.defined_tags, secondary_vnics.value.defined_tags)
+      }
+    }
+  }
+
   # OKE's node pool deletion cordons/drains pods before terminating nodes. The
   # grace period is set above via node_eviction_node_pool_settings, but OCI's
   # ceiling is 60m (PT60M) and drains have been observed to overrun regardless.
@@ -250,6 +271,27 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     content {
       key   = initial_node_labels.key
       value = initial_node_labels.value
+    }
+  }
+
+  dynamic "secondary_vnics" {
+    for_each = var.secondary_vnics
+    content {
+      display_name = secondary_vnics.value.display_name
+      nic_index    = secondary_vnics.value.nic_index
+
+      create_vnic_details {
+        subnet_id              = secondary_vnics.value.subnet_id
+        assign_public_ip       = secondary_vnics.value.assign_public_ip
+        assign_ipv6ip          = secondary_vnics.value.assign_ipv6ip
+        nsg_ids                = secondary_vnics.value.nsg_ids
+        skip_source_dest_check = secondary_vnics.value.skip_source_dest_check
+        ip_count               = secondary_vnics.value.ip_count
+        display_name           = secondary_vnics.value.display_name
+
+        freeform_tags = merge(var.freeform_tags, secondary_vnics.value.freeform_tags)
+        defined_tags  = merge(var.defined_tags, secondary_vnics.value.defined_tags)
+      }
     }
   }
 

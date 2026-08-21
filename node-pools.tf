@@ -50,6 +50,7 @@ module "node_pool" {
 
   subnet_id         = coalesce(each.value.subnet_id, var.worker_subnet_id)
   nsg_ids           = length(each.value.nsg_ids) > 0 ? each.value.nsg_ids : local.worker_nsg_ids
+  secondary_vnics   = each.value.secondary_vnics
   pod_subnet_id     = try(coalesce(each.value.pod_subnet_id, var.pod_subnet_id), null)
   pod_nsg_ids       = length(each.value.pod_nsg_ids) > 0 ? each.value.pod_nsg_ids : var.pod_nsg_ids
   max_pods_per_node = each.value.max_pods_per_node

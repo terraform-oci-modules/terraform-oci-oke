@@ -45,6 +45,7 @@ No resources.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_autoscaled_pool_secondary_vnics"></a> [autoscaled\_pool\_secondary\_vnics](#output\_autoscaled\_pool\_secondary\_vnics) | Secondary VNIC attachments on the autoscaled pool's node\_pool resource |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | The OCID of the OKE cluster |
 | <a name="output_cluster_ip_families"></a> [cluster\_ip\_families](#output\_cluster\_ip\_families) | Resolved IP families for the cluster |
 | <a name="output_cluster_service_cidr"></a> [cluster\_service\_cidr](#output\_cluster\_service\_cidr) | Resolved Kubernetes service CIDR block |

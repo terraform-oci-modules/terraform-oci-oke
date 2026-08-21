@@ -34,6 +34,7 @@ module "wrapper" {
   pod_subnet_id           = try(each.value.pod_subnet_id, var.defaults.pod_subnet_id, null)
   preemptible_config      = try(each.value.preemptible_config, var.defaults.preemptible_config, {})
   pv_transit_encryption   = try(each.value.pv_transit_encryption, var.defaults.pv_transit_encryption, true)
+  secondary_vnics         = try(each.value.secondary_vnics, var.defaults.secondary_vnics, [])
   shape                   = try(each.value.shape, var.defaults.shape)
   size                    = try(each.value.size, var.defaults.size, 1)
   ssh_public_key          = try(each.value.ssh_public_key, var.defaults.ssh_public_key, null)

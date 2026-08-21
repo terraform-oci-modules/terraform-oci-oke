@@ -17,3 +17,8 @@ output "cluster_ip_families" {
   description = "Resolved IP families for the cluster"
   value       = module.oke.cluster_ip_families
 }
+
+output "autoscaled_pool_secondary_vnics" {
+  description = "Secondary VNIC attachments on the autoscaled pool's node_pool resource"
+  value       = module.oke.node_pools["autoscaled"].secondary_vnics
+}
