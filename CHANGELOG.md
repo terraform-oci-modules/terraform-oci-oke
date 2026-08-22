@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.2.0...v0.3.0) (2026-08-22)
+
+### Features
+
+* Add control-plane logging ([#6](https://github.com/terraform-oci-modules/terraform-oci-oke/issues/6)) ([ca92fe3](https://github.com/terraform-oci-modules/terraform-oci-oke/commit/ca92fe3d9049398ba68747664ab0213894586415))
+
 ## [0.2.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.1.1...v0.2.0) (2026-08-21)
 
 ### Features
