@@ -7,9 +7,10 @@
 ################################################################################
 
 locals {
-  is_flex        = length(regexall("Flex", var.shape)) > 0
-  is_npn         = var.cni_type == "npn"
-  memory_clamped = (var.memory / var.ocpus) > 64 ? var.ocpus * 64 : var.memory
+  is_flex             = length(regexall("Flex", var.shape)) > 0
+  is_npn              = var.cni_type == "npn"
+  has_secondary_vnics = length(var.secondary_vnics) > 0
+  memory_clamped      = (var.memory / var.ocpus) > 64 ? var.ocpus * 64 : var.memory
 
   node_metadata = merge(
     {
@@ -66,10 +67,14 @@ resource "oci_containerengine_node_pool" "managed" {
     dynamic "node_pool_pod_network_option_details" {
       for_each = local.is_npn ? [1] : []
       content {
-        cni_type          = "OCI_VCN_IP_NATIVE"
-        max_pods_per_node = var.max_pods_per_node
-        pod_nsg_ids       = compact(var.pod_nsg_ids)
-        pod_subnet_ids    = compact([var.pod_subnet_id])
+        cni_type = "OCI_VCN_IP_NATIVE"
+        # The OCI API rejects pod_subnet_ids/pod_nsg_ids/max_pods_per_node
+        # outright when secondary_vnics is also set on the pool (pods run off
+        # the secondary VNIC's subnet instead). Leave them unset (computed)
+        # in that case rather than sending them.
+        max_pods_per_node = local.has_secondary_vnics ? null : var.max_pods_per_node
+        pod_nsg_ids       = local.has_secondary_vnics ? null : compact(var.pod_nsg_ids)
+        pod_subnet_ids    = local.has_secondary_vnics ? null : compact([var.pod_subnet_id])
       }
     }
 
@@ -226,10 +231,12 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     dynamic "node_pool_pod_network_option_details" {
       for_each = local.is_npn ? [1] : []
       content {
-        cni_type          = "OCI_VCN_IP_NATIVE"
-        max_pods_per_node = var.max_pods_per_node
-        pod_nsg_ids       = compact(var.pod_nsg_ids)
-        pod_subnet_ids    = compact([var.pod_subnet_id])
+        cni_type = "OCI_VCN_IP_NATIVE"
+        # See the "managed" resource above for why these are suppressed when
+        # secondary_vnics is set.
+        max_pods_per_node = local.has_secondary_vnics ? null : var.max_pods_per_node
+        pod_nsg_ids       = local.has_secondary_vnics ? null : compact(var.pod_nsg_ids)
+        pod_subnet_ids    = local.has_secondary_vnics ? null : compact([var.pod_subnet_id])
       }
     }
 

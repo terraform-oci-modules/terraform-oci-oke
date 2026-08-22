@@ -163,6 +163,15 @@ variable "secondary_vnics" {
     field is not allowed for Flannel Overlay"), enforced here via a
     precondition.
 
+    The OCI API also rejects combining secondary_vnics with pod_subnet_ids,
+    pod_nsg_ids, or max_pods_per_node ("Cannot provide podSubnets, podNsgIds,
+    or maxPodsPerNode with secondaryVnics"). When secondary_vnics is
+    non-empty, this module omits those three fields from the pool's
+    node_pool_pod_network_option_details automatically (var.pod_subnet_id,
+    var.pod_nsg_ids, and var.max_pods_per_node are ignored for that pool) and
+    lets OCI compute them - pods on this pool run off the secondary VNIC's
+    subnet rather than the pool's normal pod subnet.
+
     Example:
       secondary_vnics = [
         { subnet_id = "ocid1.subnet.oc1..." }
