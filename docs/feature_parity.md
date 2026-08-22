@@ -220,6 +220,19 @@ convention. Each has a documented path to do it yourself.
   creates at most two convenience NSGs, see below.
 - **No log destination creation.** See class C for the one piece of this that is
   a backlog item rather than a settled exclusion.
+- **No secondary VNICs on managed node pools.** `oci_containerengine_node_pool`
+  has a `secondary_vnics` block in the provider schema (multi-NIC workers,
+  analogous to `network_interfaces` in the EKS launch template), but it is
+  confirmed non-functional as of provider `oracle/oci` 8.15.0: the API rejects
+  it outright on Flannel Overlay clusters ("not allowed for Flannel Overlay"),
+  and on npn (`OCI_VCN_IP_NATIVE`) clusters it either rejects the pool
+  (`pod_subnet_ids`/`pod_nsg_ids`/`max_pods_per_node` combined with
+  `secondary_vnics` is an explicit API error) or, if those fields are left
+  unset, accepts the pool but the nodes then fail with "pod network
+  configuration timeout" because npn pods have no subnet to get IPs from.
+  There is no combination that produces a working pool today. Verified via
+  live apply against a real cluster; not merged. Worth revisiting if a future
+  provider/OCI release changes this behavior.
 
 ## Gap class C: OKE capability not yet exposed (real backlog)
 
@@ -229,7 +242,6 @@ module has an analog; this module has not wired them up.
 | Gap                                             | Detail                                                                                                                                                                                                                                                                                                              | EKS analog                                              |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | **Control-plane logging**                       | OKE publishes control-plane logs through OCI Logging (service `oke-k8s-cp-prod`, resource type `clusterscluster`, categories `kube-apiserver`, `kube-controller-manager`, `kube-scheduler`, `cloud-controller-manager`, `all-service-logs`). Wiring it up needs `oci_logging_log_group` + `oci_logging_log` resources, which this module does not create. Enable it in the Console or a separate root module for now. Note there is no OKE analog of the EKS `audit` or `authenticator` log types. | `enabled_log_types`, `create_cloudwatch_log_group`, `cloudwatch_log_group_*` |
-| **Secondary VNICs on managed node pools**       | `oci_containerengine_node_pool` supports a `secondary_vnics` block (multi-NIC workers). Not exposed by `modules/node-pool`. The sibling `terraform-oci-compute-instance` module already implements the same OCI concept, so there is a pattern to copy.                                                              | `network_interfaces` in the EKS launch template          |
 
 Everything else on `oci_containerengine_cluster`,
 `oci_containerengine_node_pool`, and `oci_containerengine_virtual_node_pool` is
