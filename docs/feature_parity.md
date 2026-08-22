@@ -42,7 +42,7 @@ design positions.
 | `aws_eks_access_entry` / `_access_policy_association` | none                                                                          | OKE authorizes through OCI IAM ([class A](#gap-class-a-no-oke-equivalent-exists)) |
 | `aws_iam_role` / `aws_iam_openid_connect_provider` | none                                                                          | IAM is documented, not created ([class B](#gap-class-b-deliberate-scope-exclusions)) |
 | `aws_kms_key` / `aws_kms_alias`    | none                                                                                            | pass an existing Vault key OCID ([class B](#gap-class-b-deliberate-scope-exclusions)) |
-| `aws_cloudwatch_log_group`         | none                                                                                            | OCI Logging analog exists, not wired ([class C](#gap-class-c-oke-capability-not-yet-exposed-real-backlog)) |
+| `aws_cloudwatch_log_group`         | `oci_logging_log_group` + `oci_logging_log`                                                     | control-plane logging, off by default            |
 
 ### Submodule mapping
 
@@ -82,6 +82,10 @@ design positions.
 | (no equivalent)                                       | `use_signed_images` / `image_signing_keys`                                   | OKE image policy, OKE-specific              |
 | (no equivalent)                                       | `kubeproxy_mode`                                                             | `iptables` or `ipvs`, OKE-specific          |
 | `putin_khuylo`                                        | none                                                                         | not ported                                  |
+| `create_cloudwatch_log_group`                         | `create_control_plane_log_group`                                             |                                             |
+| `enabled_log_types`                                   | `control_plane_enabled_log_categories`                                       | OKE's category set differs from EKS's `api`/`audit`/`authenticator`/`controllerManager`/`scheduler` - no audit or authenticator log type exists on OKE |
+| `cloudwatch_log_group_retention_in_days`              | `control_plane_log_retention_duration`                                       |                                             |
+| (no equivalent)                                       | `control_plane_log_group_tags` / `control_plane_log_group_defined_tags`      | OKE-specific per-resource tags               |
 
 ### Networking
 
@@ -168,7 +172,9 @@ submodule with this module's `node_pools` object type:
 | `cluster_tls_certificate_sha1_fingerprint`       | none                                             | only needed for the IRSA OIDC provider AWS resource      |
 | `cluster_dualstack_oidc_issuer_url`              | none                                             | OKE has one discovery endpoint                           |
 | `access_entries`, `access_policy_associations`   | none                                             | [class A](#gap-class-a-no-oke-equivalent-exists)         |
-| `kms_key_*`, `cluster_iam_role_*`, `node_iam_role_*`, `oidc_provider_arn`, `cloudwatch_log_group_*` | none | [class B](#gap-class-b-deliberate-scope-exclusions)      |
+| `kms_key_*`, `cluster_iam_role_*`, `node_iam_role_*`, `oidc_provider_arn` | none    | [class B](#gap-class-b-deliberate-scope-exclusions)      |
+| `cloudwatch_log_group_arn`                       | `control_plane_log_group_id`                     | null unless `create_control_plane_log_group = true` |
+| (no equivalent)                                  | `control_plane_log_ids`                          | per-category log OCIDs, OKE-specific                     |
 | `cluster_control_plane_scaling_tier`             | none                                             | `cluster_type` (basic/enhanced) is the nearest concept, already an input |
 
 ## Gap class A: no OKE equivalent exists
@@ -236,12 +242,12 @@ convention. Each has a documented path to do it yourself.
 
 ## Gap class C: OKE capability not yet exposed (real backlog)
 
-These are the only genuine to-dos. The OCI provider supports them and the EKS
-module has an analog; this module has not wired them up.
-
-| Gap                                             | Detail                                                                                                                                                                                                                                                                                                              | EKS analog                                              |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **Control-plane logging**                       | OKE publishes control-plane logs through OCI Logging (service `oke-k8s-cp-prod`, resource type `clusterscluster`, categories `kube-apiserver`, `kube-controller-manager`, `kube-scheduler`, `cloud-controller-manager`, `all-service-logs`). Wiring it up needs `oci_logging_log_group` + `oci_logging_log` resources, which this module does not create. Enable it in the Console or a separate root module for now. Note there is no OKE analog of the EKS `audit` or `authenticator` log types. | `enabled_log_types`, `create_cloudwatch_log_group`, `cloudwatch_log_group_*` |
+These are the only genuine to-dos: cases where the OCI provider supports a
+capability and the EKS module has an analog, but this module has not wired it
+up yet. Empty as of this writing - the last item, control-plane logging, is
+now implemented (`create_control_plane_log_group`,
+`control_plane_enabled_log_categories`, see the variable/output mapping
+tables above).
 
 Everything else on `oci_containerengine_cluster`,
 `oci_containerengine_node_pool`, and `oci_containerengine_virtual_node_pool` is
