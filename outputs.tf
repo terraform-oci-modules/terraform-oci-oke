@@ -137,3 +137,17 @@ output "worker_nsg_id" {
   description = "OCID of the worker NSG created by this module (null when create_worker_nsg = false)."
   value       = try(oci_core_network_security_group.worker[0].id, null)
 }
+
+################################################################################
+# Control-plane logging
+################################################################################
+
+output "control_plane_log_group_id" {
+  description = "OCID of the control-plane log group created by this module (null when create_control_plane_log_group = false). Maps to EKS cloudwatch_log_group_arn."
+  value       = try(oci_logging_log_group.control_plane[0].id, null)
+}
+
+output "control_plane_log_ids" {
+  description = "Control-plane log OCIDs by category."
+  value       = { for k, l in oci_logging_log.control_plane : k => l.id }
+}

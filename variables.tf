@@ -332,6 +332,60 @@ variable "service_lb_defined_tags" {
   nullable    = false
 }
 
+variable "control_plane_log_group_tags" {
+  description = "Freeform tags applied to the control-plane log group."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+}
+
+variable "control_plane_log_group_defined_tags" {
+  description = "Defined tags applied to the control-plane log group."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+}
+
+################################################################################
+# Control-plane logging (maps to EKS enabled_log_types / create_cloudwatch_log_group)
+################################################################################
+
+variable "create_control_plane_log_group" {
+  description = "Create an OCI Logging log group + one log per entry in control_plane_enabled_log_categories for the cluster's control-plane logs. Maps to EKS create_cloudwatch_log_group."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "control_plane_enabled_log_categories" {
+  description = <<-EOT
+    OKE control-plane log categories to enable. Only takes effect when
+    create_control_plane_log_group = true. Maps to EKS enabled_log_types, but
+    OKE's category set is different (no audit/authenticator log type exists
+    on OKE). Valid values: "kube-apiserver", "kube-controller-manager",
+    "kube-scheduler", "cloud-controller-manager", "all-service-logs".
+  EOT
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for c in var.control_plane_enabled_log_categories : contains(
+        ["kube-apiserver", "kube-controller-manager", "kube-scheduler", "cloud-controller-manager", "all-service-logs"],
+        c
+      )
+    ])
+    error_message = "control_plane_enabled_log_categories entries must be one of: kube-apiserver, kube-controller-manager, kube-scheduler, cloud-controller-manager, all-service-logs."
+  }
+}
+
+variable "control_plane_log_retention_duration" {
+  description = "Retention in days for control-plane logs. Null uses the OCI Logging default (30 days). Maps to the EKS control-plane CloudWatch log group's retention_in_days."
+  type        = number
+  default     = null
+}
+
 ################################################################################
 # Network Security Groups (optional, generic)
 ################################################################################
