@@ -213,9 +213,23 @@ variable "enable_oidc_token_auth" {
 
 variable "oidc_token_authentication_config" {
   description = "OIDC token authentication settings (issuer_url, client_id, ca_certificate, claims, etc.)."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = object({
+    issuer_url         = optional(string)
+    client_id          = optional(string)
+    ca_certificate     = optional(string)
+    signing_algorithms = optional(list(string))
+    groups_claim       = optional(string)
+    groups_prefix      = optional(string)
+    username_claim     = optional(string)
+    username_prefix    = optional(string)
+    configuration_file = optional(string)
+    required_claims = optional(list(object({
+      key   = string
+      value = string
+    })), [])
+  })
+  default  = {}
+  nullable = false
 }
 
 ################################################################################
@@ -406,30 +420,98 @@ variable "create_worker_nsg" {
 
 variable "control_plane_nsg_ingress_rules" {
   description = "Ingress rules for the created control plane NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol    = string
+    source      = string
+    source_type = optional(string, "CIDR_BLOCK")
+    description = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "control_plane_nsg_egress_rules" {
   description = "Egress rules for the created control plane NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol         = string
+    destination      = string
+    destination_type = optional(string, "CIDR_BLOCK")
+    description      = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "worker_nsg_ingress_rules" {
   description = "Ingress rules for the created worker NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol    = string
+    source      = string
+    source_type = optional(string, "CIDR_BLOCK")
+    description = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "worker_nsg_egress_rules" {
   description = "Egress rules for the created worker NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol         = string
+    destination      = string
+    destination_type = optional(string, "CIDR_BLOCK")
+    description      = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "control_plane_nsg_enable_recommended_rules" {
@@ -570,6 +652,11 @@ variable "node_pools" {
   }))
   default  = {}
   nullable = false
+
+  validation {
+    condition     = alltrue([for k, v in var.node_pools : v.eviction_grace_duration >= 0 && v.eviction_grace_duration <= 3600 && floor(v.eviction_grace_duration) == v.eviction_grace_duration])
+    error_message = "node_pools[*].eviction_grace_duration must be a whole number of seconds between 0 and 3600."
+  }
 }
 
 ################################################################################

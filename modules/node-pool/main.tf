@@ -11,6 +11,16 @@ locals {
   is_npn         = var.cni_type == "npn"
   memory_clamped = (var.memory / var.ocpus) > 64 ? var.ocpus * 64 : var.memory
 
+  # ISO 8601 in the canonical form OCI stores it (PT1H, PT5M, PT1M30S, PT45S).
+  # Any other spelling of the same duration (e.g. PT60M, PT90S) plans a diff on
+  # every run.
+  eviction_grace_duration = (
+    var.eviction_grace_duration >= 3600 ? "PT1H" :
+    var.eviction_grace_duration < 60 ? format("PT%dS", var.eviction_grace_duration) :
+    var.eviction_grace_duration % 60 == 0 ? format("PT%dM", floor(var.eviction_grace_duration / 60)) :
+    format("PT%dM%dS", floor(var.eviction_grace_duration / 60), var.eviction_grace_duration % 60)
+  )
+
   node_metadata = merge(
     {
       apiserver_host           = var.apiserver_private_host
@@ -96,7 +106,7 @@ resource "oci_containerengine_node_pool" "managed" {
   }
 
   node_eviction_node_pool_settings {
-    eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
+    eviction_grace_duration              = local.eviction_grace_duration
     is_force_delete_after_grace_duration = var.force_node_delete
     is_force_action_after_grace_duration = var.force_node_action
   }
@@ -230,7 +240,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   }
 
   node_eviction_node_pool_settings {
-    eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
+    eviction_grace_duration              = local.eviction_grace_duration
     is_force_delete_after_grace_duration = var.force_node_delete
     is_force_action_after_grace_duration = var.force_node_action
   }

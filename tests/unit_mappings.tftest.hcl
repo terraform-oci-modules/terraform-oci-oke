@@ -181,3 +181,53 @@ run "managed_pool_accepts_per_pool_node_metadata" {
     error_message = "node_pools must expose a per-pool node_metadata map"
   }
 }
+
+# --- Typed rule / OIDC inputs ----------------------------------------------
+
+run "typed_worker_ingress_rule_maps_to_resource" {
+  command = plan
+
+  variables {
+    create_worker_nsg = true
+    worker_nsg_ingress_rules = {
+      https = {
+        protocol    = "6"
+        source      = "10.0.0.0/16"
+        tcp_options = { min = 443, max = 443 }
+      }
+    }
+  }
+
+  assert {
+    condition     = oci_core_network_security_group_security_rule.worker_ingress["https"].source_type == "CIDR_BLOCK"
+    error_message = "source_type must default to CIDR_BLOCK"
+  }
+
+  assert {
+    condition     = oci_core_network_security_group_security_rule.worker_ingress["https"].tcp_options[0].destination_port_range[0].min == 443
+    error_message = "tcp_options.min must map to destination_port_range.min"
+  }
+}
+
+run "typed_oidc_config_maps_required_claims" {
+  command = plan
+
+  variables {
+    enable_oidc_token_auth = true
+    oidc_token_authentication_config = {
+      issuer_url      = "https://issuer.example.com"
+      client_id       = "oke"
+      required_claims = [{ key = "aud", value = "oke" }]
+    }
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].options[0].open_id_connect_token_authentication_config[0].issuer_url == "https://issuer.example.com"
+    error_message = "issuer_url must reach the cluster OIDC config"
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].options[0].open_id_connect_token_authentication_config[0].required_claims[0].key == "aud"
+    error_message = "required_claims must map to required_claims blocks"
+  }
+}

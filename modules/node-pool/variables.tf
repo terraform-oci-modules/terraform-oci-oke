@@ -205,6 +205,11 @@ variable "eviction_grace_duration" {
   type        = number
   default     = 300
   nullable    = false
+
+  validation {
+    condition     = var.eviction_grace_duration >= 0 && var.eviction_grace_duration <= 3600 && floor(var.eviction_grace_duration) == var.eviction_grace_duration
+    error_message = "eviction_grace_duration must be a whole number of seconds between 0 and 3600."
+  }
 }
 
 variable "force_node_delete" {
