@@ -107,8 +107,31 @@ If this needs to be more automated later, it would need to be built into this mo
 (a `null_resource`/local-exec loop over `list-instances` + `terminate`, or similar) -
 nothing upstream provides it.
 
-## Virtual node pools: no version to bump
+## Virtual node pools: no version to bump, opt-in cycling
 
-`oci_containerengine_virtual_node_pool` has no `kubernetes_version` argument at all.
-OKE fully owns the virtual node image and Kubernetes version; there is nothing to
-configure or roll from this module's side.
+`oci_containerengine_virtual_node_pool` has no `kubernetes_version` argument (the
+provider exposes it as a read-only attribute). OKE fully owns the virtual node image
+and Kubernetes version, so there is no version to bump from this module's side.
+
+Changing a virtual pool's own configuration (pod shape, NSGs, subnets, labels,
+taints) updates the pool in place but, by default, leaves running virtual nodes as
+they are. Set `node_cycling` to have OKE replace them (requires provider
+`oracle/oci` 8.21.0 or later, which this module now requires):
+
+```hcl
+virtual_node_pools = {
+  vnp1 = {
+    # ...
+    node_cycling = {
+      enabled             = true
+      maximum_surge       = "1" # extra virtual nodes during the roll (count or %)
+      maximum_unavailable = "0" # nodes taken away at once (count or %)
+    }
+  }
+}
+```
+
+The defaults (`"1"` and `"0"`) are OCI's own, so `enabled = true` alone gives a
+roll that never drops below the pool's size. Unlike managed pools there is no
+`cycle_modes`. The cluster is always enhanced here, since virtual pools already
+require it.

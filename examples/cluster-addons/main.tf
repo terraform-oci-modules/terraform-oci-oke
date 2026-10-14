@@ -7,7 +7,7 @@ locals {
   region = "us-ashburn-1"
 
   vcn_cidr           = "10.0.0.0/16"
-  kubernetes_version = "v1.36.1"
+  kubernetes_version = "v1.36.4"
 
   tags = {
     Example    = local.name
@@ -44,7 +44,7 @@ module "vcn" {
 # Add-ons are OKE-managed: OKE installs/upgrades/reconciles them. Add a key to
 # turn an optional add-on on; remove it to turn it off. List the catalog for a
 # version with:
-#   oci ce addon-option list --kubernetes-version v1.36.1 --all --query 'data[*].name'
+#   oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].name'
 ################################################################################
 
 module "oke" {

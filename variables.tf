@@ -679,6 +679,11 @@ variable "virtual_node_pools" {
       value  = optional(string)
       effect = optional(string, "NoSchedule")
     })), {})
+    node_cycling = optional(object({
+      enabled             = optional(bool, false)
+      maximum_surge       = optional(string, "1")
+      maximum_unavailable = optional(string, "0")
+    }), {})
     timeouts = optional(object({
       create = optional(string)
       update = optional(string)
@@ -689,6 +694,16 @@ variable "virtual_node_pools" {
   }))
   default  = {}
   nullable = false
+
+  validation {
+    condition = alltrue(flatten([
+      for p in values(var.virtual_node_pools) : [
+        for v in [p.node_cycling.maximum_surge, p.node_cycling.maximum_unavailable] :
+        can(regex("^([0-9]+|([0-9]|[1-9][0-9]|100)%)$", v))
+      ]
+    ]))
+    error_message = "virtual_node_pools[*].node_cycling.maximum_surge and maximum_unavailable must be a whole number or a percentage from 0% to 100%."
+  }
 }
 
 ################################################################################

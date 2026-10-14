@@ -9,7 +9,7 @@ Turn an optional add-on **on** by adding its key to `addons`; turn it
 **off** by removing the key. The catalog is Kubernetes-version specific:
 
 ```bash
-oci ce addon-option list --kubernetes-version v1.36.1 --all --query 'data[*].name'
+oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].name'
 ```
 
 > `ClusterAutoscaler` and `ObservabilityAgent` call OCI APIs and require IAM
@@ -37,7 +37,7 @@ terraform plan -var 'compartment_id=<your-compartment-ocid>'
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 6.0 |
+| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 8.21.0 |
 
 ## Providers
 

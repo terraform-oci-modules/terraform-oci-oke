@@ -231,3 +231,46 @@ run "typed_oidc_config_maps_required_claims" {
     error_message = "required_claims must map to required_claims blocks"
   }
 }
+
+# --- Virtual node pool cycling -----------------------------------------------
+
+run "virtual_pool_node_cycling_reaches_resource" {
+  command = plan
+
+  variables {
+    cluster_type  = "enhanced"
+    cni_type      = "npn"
+    pod_subnet_id = "ocid1.subnet.oc1..aaaaaaaapod"
+    virtual_node_pools = {
+      vnp = {
+        node_cycling = { enabled = true, maximum_surge = "2" }
+      }
+    }
+  }
+
+  assert {
+    condition     = output.virtual_node_pools["vnp"].virtual_node_pool_cycling_details[0].maximum_surge == "2"
+    error_message = "virtual_node_pools[*].node_cycling must reach virtual_node_pool_cycling_details"
+  }
+  assert {
+    condition     = output.virtual_node_pools["vnp"].virtual_node_pool_cycling_details[0].maximum_unavailable == "0"
+    error_message = "maximum_unavailable must default to OCI's 0"
+  }
+}
+
+run "virtual_pool_node_cycling_rejects_bad_value" {
+  command = plan
+
+  variables {
+    cluster_type  = "enhanced"
+    cni_type      = "npn"
+    pod_subnet_id = "ocid1.subnet.oc1..aaaaaaaapod"
+    virtual_node_pools = {
+      vnp = {
+        node_cycling = { enabled = true, maximum_unavailable = "-1" }
+      }
+    }
+  }
+
+  expect_failures = [var.virtual_node_pools]
+}

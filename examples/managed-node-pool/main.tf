@@ -7,7 +7,7 @@ locals {
   region = "us-ashburn-1"
 
   vcn_cidr           = "10.0.0.0/16"
-  kubernetes_version = "v1.36.1"
+  kubernetes_version = "v1.36.4"
 
   tags = {
     Example    = local.name

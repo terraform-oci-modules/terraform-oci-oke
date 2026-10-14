@@ -64,7 +64,7 @@ design positions.
 | ----------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
 | `create`                                              | `create`                                                                     |                                             |
 | `name`                                                | `name`                                                                       | the `cluster_name` **output** mirrors EKS's output name |
-| `kubernetes_version`                                  | `kubernetes_version`                                                         | OKE requires a `v` prefix, e.g. `v1.36.1`. Required here; EKS lets AWS pick the latest when null, the OCI provider does not |
+| `kubernetes_version`                                  | `kubernetes_version`                                                         | OKE requires a `v` prefix, e.g. `v1.36.4`. Required here; EKS lets AWS pick the latest when null, the OCI provider does not |
 | `region`                                              | provider `region`                                                            | OCI has no per-resource region argument     |
 | (no equivalent)                                       | `compartment_id`                                                             | OCI's account/region scoping analog, OKE-specific |
 | `tags`                                                | `tags` (freeform) + `defined_tags`                                           | OCI has two tag systems                     |

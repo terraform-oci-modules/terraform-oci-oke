@@ -46,6 +46,15 @@ resource "oci_containerengine_virtual_node_pool" "this" {
     }
   }
 
+  dynamic "virtual_node_pool_cycling_details" {
+    for_each = var.node_cycling.enabled ? [1] : []
+    content {
+      is_virtual_node_cycling_enabled = true
+      maximum_surge                   = var.node_cycling.maximum_surge
+      maximum_unavailable             = var.node_cycling.maximum_unavailable
+    }
+  }
+
   virtual_node_tags {
     freeform_tags = var.freeform_tags
     defined_tags  = var.defined_tags

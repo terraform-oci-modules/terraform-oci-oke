@@ -21,7 +21,7 @@ module "oke" {
 
   name               = "my-cluster"
   compartment_id     = var.compartment_id
-  kubernetes_version = "v1.36.1"
+  kubernetes_version = "v1.36.4"
   cluster_type       = "basic"
   cni_type           = "flannel"
 
@@ -113,7 +113,7 @@ cannot be turned off: `CoreDNS`, `KubeProxy`, and the CNI (`Flannel` for
 > for your version with:
 >
 > ```bash
-> oci ce addon-option list --kubernetes-version v1.36.1 --all --query 'data[*].name'
+> oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].name'
 > ```
 
 ### Turning add-ons on/off
@@ -189,7 +189,7 @@ tenancy-level permissions, which is why it is out of scope, see
 
 ## OCI notes
 
-- **Kubernetes version** uses a `v` prefix (e.g. `v1.36.1`); list supported
+- **Kubernetes version** uses a `v` prefix (e.g. `v1.36.4`); list supported
   versions with `oci ce node-pool-options get --node-pool-option-id all`.
 - **Availability domains** are referenced by number (`[1, 2, 3]`) and resolved to
   tenancy-specific AD names by the module.
@@ -238,13 +238,13 @@ module can also create its own NSGs:
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 6.0, < 8.16.0 |
+| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 8.21.0 |
 
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_oci"></a> [oci](#provider\_oci) | >= 6.0, < 8.16.0 |
+| <a name="provider_oci"></a> [oci](#provider\_oci) | >= 8.21.0 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
@@ -335,7 +335,7 @@ module can also create its own NSGs:
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | Create/update/delete timeouts for the cluster. | <pre>object({<br/>    create = optional(string, "60m")<br/>    update = optional(string, "120m")<br/>    delete = optional(string, "60m")<br/>  })</pre> | `{}` | no |
 | <a name="input_use_signed_images"></a> [use\_signed\_images](#input\_use\_signed\_images) | Enforce signed worker node images via an image policy. | `bool` | `false` | no |
 | <a name="input_vcn_id"></a> [vcn\_id](#input\_vcn\_id) | OCID of the VCN hosting the cluster. Maps to the EKS vpc\_id variable. Supplied by the sibling terraform-oci-vcn module. | `string` | n/a | yes |
-| <a name="input_virtual_node_pools"></a> [virtual\_node\_pools](#input\_virtual\_node\_pools) | Virtual (serverless) node pools keyed by name. Requires enhanced cluster + npn CNI. Maps to fargate\_profiles. | <pre>map(object({<br/>    compartment_id       = optional(string)<br/>    shape                = optional(string, "Pod.Standard.E4.Flex")<br/>    size                 = optional(number, 1)<br/>    availability_domains = optional(list(number))<br/>    subnet_id            = optional(string)<br/>    pod_subnet_id        = optional(string)<br/>    nsg_ids              = optional(list(string), [])<br/>    pod_nsg_ids          = optional(list(string), [])<br/>    node_labels          = optional(map(string), {})<br/>    taints = optional(map(object({<br/>      value  = optional(string)<br/>      effect = optional(string, "NoSchedule")<br/>    })), {})<br/>    timeouts = optional(object({<br/>      create = optional(string)<br/>      update = optional(string)<br/>      delete = optional(string, "75m")<br/>    }), {})<br/>    freeform_tags = optional(map(string), {})<br/>    defined_tags  = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
+| <a name="input_virtual_node_pools"></a> [virtual\_node\_pools](#input\_virtual\_node\_pools) | Virtual (serverless) node pools keyed by name. Requires enhanced cluster + npn CNI. Maps to fargate\_profiles. | <pre>map(object({<br/>    compartment_id       = optional(string)<br/>    shape                = optional(string, "Pod.Standard.E4.Flex")<br/>    size                 = optional(number, 1)<br/>    availability_domains = optional(list(number))<br/>    subnet_id            = optional(string)<br/>    pod_subnet_id        = optional(string)<br/>    nsg_ids              = optional(list(string), [])<br/>    pod_nsg_ids          = optional(list(string), [])<br/>    node_labels          = optional(map(string), {})<br/>    taints = optional(map(object({<br/>      value  = optional(string)<br/>      effect = optional(string, "NoSchedule")<br/>    })), {})<br/>    node_cycling = optional(object({<br/>      enabled             = optional(bool, false)<br/>      maximum_surge       = optional(string, "1")<br/>      maximum_unavailable = optional(string, "0")<br/>    }), {})<br/>    timeouts = optional(object({<br/>      create = optional(string)<br/>      update = optional(string)<br/>      delete = optional(string, "75m")<br/>    }), {})<br/>    freeform_tags = optional(map(string), {})<br/>    defined_tags  = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_worker_allow_internet_egress"></a> [worker\_allow\_internet\_egress](#input\_worker\_allow\_internet\_egress) | Add an all-protocol egress-to-internet (0.0.0.0/0) rule to the recommended worker NSG ruleset. Set false for private clusters that reach the internet only via a NAT/service gateway. | `bool` | `true` | no |
 | <a name="input_worker_defined_tags"></a> [worker\_defined\_tags](#input\_worker\_defined\_tags) | Defined tags applied to all worker pools (merged with var.defined\_tags). | `map(string)` | `{}` | no |
 | <a name="input_worker_metadata"></a> [worker\_metadata](#input\_worker\_metadata) | Global instance metadata merged into every node pool (per-pool node\_metadata is merged on top). | `map(string)` | `{}` | no |
