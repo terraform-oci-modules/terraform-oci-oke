@@ -117,6 +117,28 @@ is the fix regardless of `cluster_type`.
    underlying issue with more diagnostic detail available, or a related-but-distinct failure mode.
    Either way the fix is the same manual force-delete below.
 
+   **Update (2026-10-15):** reproduced four times on provider 9.9.0 with a virtual pool that
+   ran no workloads. The virtual pool delete sits on "Terminating all instances from virtual
+   node pool" with the virtual nodes `ACTIVE`, then fails after exactly 61 minutes (the 60
+   minute grace period plus overhead) with an empty work-request error and the pool in
+   `NEEDS_ATTENTION`. Teardown order does not matter: it failed the same way when the virtual
+   pool was deleted first, with the managed nodes still up to take evicted pods. OKE does not
+   force-terminate at the end of the grace period for virtual pools, and the provider has no
+   argument to make it, so plan on the force-delete below (it finishes in about 3 minutes).
+
+   The same run showed it for a managed pool too. With the virtual pool gone, the last managed
+   pool (one node, `eviction_grace_duration = 3600`, `force_node_delete = false`) sat draining
+   for the full hour and failed with `"1 nodes(s) pod eviction timeout"` into
+   `NEEDS_ATTENTION`. Terminating the node's compute instance mid-drain did not help: OKE kept
+   waiting on the drain. The force-delete below then took 33 seconds. On managed pools,
+   `force_node_delete = true` makes OKE delete the nodes when the grace period ends instead of
+   failing.
+
+   A virtual pool **create** can also hang: once the provider polled a create work request for
+   about 32 hours while the pool and its nodes had been `ACTIVE` within seconds, then failed
+   with a 404 when the work request expired and left the pool tainted in state. Setting
+   `timeouts.create` on virtual pools (for example `"30m"`) bounds that wait.
+
    `terraform test`'s own teardown does not retry this and leaves the cluster, node pool/virtual
    node pool, NSGs, and full VCN (subnets, gateways, route tables) in the compartment. This module
    sets `timeouts { delete = "75m" }` on the node pool and virtual node pool resources so Terraform
