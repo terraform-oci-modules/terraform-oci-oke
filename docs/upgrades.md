@@ -23,8 +23,8 @@ Confirmed with `oci ce node-pool get`: after the apply, the pool's own
 `kubernetes-version` field read the new version, but both existing nodes (same names)
 still reported the old version and stayed `ACTIVE` throughout.
 
-This is the default, and it is intentional, not a bug: **`node_cycling` defaults to
-`enabled = false`.** New nodes (from a future scale-up) pick up the new template; nodes
+This is the default, and it is intentional, not a bug: **`node_cycling` is off unless
+you set `enabled = true`.** New nodes (from a future scale-up) pick up the new template; nodes
 that already exist keep running the old version/image until you either enable
 `node_cycling` or replace them yourself.
 
@@ -69,6 +69,15 @@ fire-and-forget background operation from Terraform's point of view.
 `autoscale = true` pools go through the identical `node_pool_cycling_details` block
 (`oci_containerengine_node_pool.autoscaled` in `modules/node-pool/main.tf`), so
 everything above applies to them too.
+
+### Turning cycling off again
+
+Set `enabled = false`; do not just remove `node_cycling`. The provider treats a missing
+cycling block as "keep the current setting", so removing it leaves cycling on. With
+`enabled = false` the module sends `is_node_cycling_enabled = false` (enhanced clusters
+only; basic clusters have no cycling to turn off). The same applies to virtual node
+pools, and to ZPR `security_attributes` / `control_plane_security_attributes`: pass `{}`
+to clear them.
 
 ## Self-managed node pools: no rolling-upgrade path exists
 

@@ -105,7 +105,7 @@ resource "oci_containerengine_cluster" "this" {
     is_public_ip_enabled = var.control_plane_is_public && var.assign_public_ip_to_control_plane
     nsg_ids              = local.control_plane_nsg_ids
     subnet_id            = var.control_plane_subnet_id
-    security_attributes  = length(var.control_plane_security_attributes) > 0 ? var.control_plane_security_attributes : null
+    security_attributes  = var.control_plane_security_attributes
   }
 
   # Secrets encryption with a customer KMS key (maps to EKS encryption_config).

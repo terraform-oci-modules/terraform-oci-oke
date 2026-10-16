@@ -203,10 +203,9 @@ variable "host_group_id" {
 }
 
 variable "security_attributes" {
-  description = "Zero Trust Packet Routing (ZPR) security attributes for each node's primary VNIC, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }."
+  description = "Zero Trust Packet Routing (ZPR) security attributes for each node's primary VNIC, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }. Leave unset (null) to send nothing. To remove attributes that were set, pass {}: removing the input keeps the current attributes, because the provider treats a missing value as \"keep\"."
   type        = map(string)
-  default     = {}
-  nullable    = false
+  default     = null
 }
 
 variable "preemptible_config" {
@@ -246,9 +245,9 @@ variable "force_node_action" {
 }
 
 variable "node_cycling" {
-  description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\"."
+  description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\". enabled: null (default) sends nothing; true turns cycling on; false turns it off. To turn cycling off after it was on, set enabled = false: removing node_cycling keeps the current setting, because the provider treats a missing block as \"keep\"."
   type = object({
-    enabled             = optional(bool, false)
+    enabled             = optional(bool)
     maximum_surge       = optional(string, "1")
     maximum_unavailable = optional(string, "1")
     cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])

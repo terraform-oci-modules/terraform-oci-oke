@@ -47,11 +47,13 @@ resource "oci_containerengine_virtual_node_pool" "this" {
   }
 
   dynamic "virtual_node_pool_cycling_details" {
-    for_each = var.node_cycling.enabled ? [1] : []
+    # Sent when enabled is set, including false: omitting the block keeps the
+    # current setting.
+    for_each = var.node_cycling.enabled != null ? [1] : []
     content {
-      is_virtual_node_cycling_enabled = true
-      maximum_surge                   = var.node_cycling.maximum_surge
-      maximum_unavailable             = var.node_cycling.maximum_unavailable
+      is_virtual_node_cycling_enabled = var.node_cycling.enabled
+      maximum_surge                   = var.node_cycling.enabled ? var.node_cycling.maximum_surge : null
+      maximum_unavailable             = var.node_cycling.enabled ? var.node_cycling.maximum_unavailable : null
     }
   }
 

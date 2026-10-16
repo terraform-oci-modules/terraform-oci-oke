@@ -46,7 +46,7 @@ resource "oci_containerengine_node_pool" "managed" {
 
   # ZPR security attributes on each node's primary VNIC. Sent only when set.
   dynamic "primary_vnic" {
-    for_each = length(var.security_attributes) > 0 ? [1] : []
+    for_each = var.security_attributes != null ? [1] : []
     content {
       security_attributes = var.security_attributes
     }
@@ -122,12 +122,14 @@ resource "oci_containerengine_node_pool" "managed" {
   }
 
   dynamic "node_pool_cycling_details" {
-    for_each = var.node_cycling.enabled ? [1] : []
+    # Sent when enabled is set, including false: omitting the block keeps the
+    # current setting. Basic clusters have no cycling, so false sends nothing.
+    for_each = var.node_cycling.enabled == true || (var.node_cycling.enabled == false && lower(var.cluster_type) == "enhanced") ? [1] : []
     content {
-      is_node_cycling_enabled = true
-      maximum_surge           = var.node_cycling.maximum_surge
-      maximum_unavailable     = var.node_cycling.maximum_unavailable
-      cycle_modes             = var.node_cycling.cycle_modes
+      is_node_cycling_enabled = var.node_cycling.enabled
+      maximum_surge           = var.node_cycling.enabled ? var.node_cycling.maximum_surge : null
+      maximum_unavailable     = var.node_cycling.enabled ? var.node_cycling.maximum_unavailable : null
+      cycle_modes             = var.node_cycling.enabled ? var.node_cycling.cycle_modes : null
     }
   }
 
@@ -173,7 +175,7 @@ resource "oci_containerengine_node_pool" "managed" {
     }
 
     precondition {
-      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      condition     = var.node_cycling.enabled != true || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
   }
@@ -195,7 +197,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
 
   # ZPR security attributes on each node's primary VNIC. Sent only when set.
   dynamic "primary_vnic" {
-    for_each = length(var.security_attributes) > 0 ? [1] : []
+    for_each = var.security_attributes != null ? [1] : []
     content {
       security_attributes = var.security_attributes
     }
@@ -271,12 +273,14 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   }
 
   dynamic "node_pool_cycling_details" {
-    for_each = var.node_cycling.enabled ? [1] : []
+    # Sent when enabled is set, including false: omitting the block keeps the
+    # current setting. Basic clusters have no cycling, so false sends nothing.
+    for_each = var.node_cycling.enabled == true || (var.node_cycling.enabled == false && lower(var.cluster_type) == "enhanced") ? [1] : []
     content {
-      is_node_cycling_enabled = true
-      maximum_surge           = var.node_cycling.maximum_surge
-      maximum_unavailable     = var.node_cycling.maximum_unavailable
-      cycle_modes             = var.node_cycling.cycle_modes
+      is_node_cycling_enabled = var.node_cycling.enabled
+      maximum_surge           = var.node_cycling.enabled ? var.node_cycling.maximum_surge : null
+      maximum_unavailable     = var.node_cycling.enabled ? var.node_cycling.maximum_unavailable : null
+      cycle_modes             = var.node_cycling.enabled ? var.node_cycling.cycle_modes : null
     }
   }
 
@@ -323,7 +327,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     }
 
     precondition {
-      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      condition     = var.node_cycling.enabled != true || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
   }

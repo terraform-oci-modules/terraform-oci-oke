@@ -115,10 +115,9 @@ variable "assign_public_ip_to_control_plane" {
 }
 
 variable "control_plane_security_attributes" {
-  description = "Zero Trust Packet Routing (ZPR) security attributes for the control plane endpoint, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }."
+  description = "Zero Trust Packet Routing (ZPR) security attributes for the control plane endpoint, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }. Leave unset (null) to send nothing. To remove attributes that were set, pass {}: removing the input keeps the current attributes, because the provider treats a missing value as \"keep\"."
   type        = map(string)
-  default     = {}
-  nullable    = false
+  default     = null
 }
 
 variable "control_plane_nsg_ids" {
@@ -637,7 +636,7 @@ variable "node_pools" {
     capacity_reservation_id = optional(string)
     compute_cluster_id      = optional(string)
     host_group_id           = optional(string)
-    security_attributes     = optional(map(string), {})
+    security_attributes     = optional(map(string))
     preemptible_config = optional(object({
       enable                  = optional(bool, false)
       is_preserve_boot_volume = optional(bool, false)
@@ -647,7 +646,7 @@ variable "node_pools" {
     force_node_action       = optional(bool, false)
     network_launch_type     = optional(string)
     node_cycling = optional(object({
-      enabled             = optional(bool, false)
+      enabled             = optional(bool)
       maximum_surge       = optional(string, "1")
       maximum_unavailable = optional(string, "1")
       cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])
@@ -690,7 +689,7 @@ variable "virtual_node_pools" {
       effect = optional(string, "NoSchedule")
     })), {})
     node_cycling = optional(object({
-      enabled             = optional(bool, false)
+      enabled             = optional(bool)
       maximum_surge       = optional(string, "1")
       maximum_unavailable = optional(string, "0")
     }), {})

@@ -90,9 +90,9 @@ variable "taints" {
 }
 
 variable "node_cycling" {
-  description = "Virtual node cycling: replaces running virtual nodes when the pool's configuration changes. maximum_surge and maximum_unavailable take a count or a percentage."
+  description = "Virtual node cycling: replaces running virtual nodes when the pool's configuration changes. maximum_surge and maximum_unavailable take a count or a percentage. enabled: null (default) sends nothing; true turns cycling on; false turns it off. To turn cycling off after it was on, set enabled = false: removing node_cycling keeps the current setting, because the provider treats a missing block as \"keep\"."
   type = object({
-    enabled             = optional(bool, false)
+    enabled             = optional(bool)
     maximum_surge       = optional(string, "1")
     maximum_unavailable = optional(string, "0")
   })
