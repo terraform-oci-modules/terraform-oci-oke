@@ -190,6 +190,25 @@ variable "capacity_reservation_id" {
   default     = null
 }
 
+variable "compute_cluster_id" {
+  description = "Compute cluster OCID to place the nodes in (RDMA / GPU clusters). Requires a single availability domain."
+  type        = string
+  default     = null
+}
+
+variable "host_group_id" {
+  description = "Host group OCID to place the nodes on dedicated hosts. Requires a single availability domain. Applied at pool creation (placement_configs changes are ignored afterwards)."
+  type        = string
+  default     = null
+}
+
+variable "security_attributes" {
+  description = "Zero Trust Packet Routing (ZPR) security attributes for each node's primary VNIC, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+}
+
 variable "preemptible_config" {
   description = "Preemptible node configuration."
   type = object({

@@ -114,6 +114,13 @@ variable "assign_public_ip_to_control_plane" {
   nullable    = false
 }
 
+variable "control_plane_security_attributes" {
+  description = "Zero Trust Packet Routing (ZPR) security attributes for the control plane endpoint, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+}
+
 variable "control_plane_nsg_ids" {
   description = "Additional NSG OCIDs for the control plane endpoint. Maps to EKS additional_security_group_ids."
   type        = list(string)
@@ -628,6 +635,9 @@ variable "node_pools" {
     volume_kms_key_id       = optional(string)
     pv_transit_encryption   = optional(bool, true)
     capacity_reservation_id = optional(string)
+    compute_cluster_id      = optional(string)
+    host_group_id           = optional(string)
+    security_attributes     = optional(map(string), {})
     preemptible_config = optional(object({
       enable                  = optional(bool, false)
       is_preserve_boot_volume = optional(bool, false)

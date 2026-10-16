@@ -58,6 +58,9 @@ module "node_pool" {
   volume_kms_key_id       = each.value.volume_kms_key_id
   pv_transit_encryption   = each.value.pv_transit_encryption
   capacity_reservation_id = each.value.capacity_reservation_id
+  compute_cluster_id      = each.value.compute_cluster_id
+  host_group_id           = each.value.host_group_id
+  security_attributes     = each.value.security_attributes
   preemptible_config      = each.value.preemptible_config
   eviction_grace_duration = each.value.eviction_grace_duration
   force_node_delete       = each.value.force_node_delete

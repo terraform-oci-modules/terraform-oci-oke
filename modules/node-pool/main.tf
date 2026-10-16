@@ -44,11 +44,20 @@ resource "oci_containerengine_node_pool" "managed" {
   defined_tags        = var.defined_tags
   node_metadata       = local.node_metadata
 
+  # ZPR security attributes on each node's primary VNIC. Sent only when set.
+  dynamic "primary_vnic" {
+    for_each = length(var.security_attributes) > 0 ? [1] : []
+    content {
+      security_attributes = var.security_attributes
+    }
+  }
+
   node_config_details {
     size                                = var.size
     nsg_ids                             = var.nsg_ids
     kms_key_id                          = var.volume_kms_key_id
     is_pv_encryption_in_transit_enabled = var.pv_transit_encryption
+    compute_cluster_id                  = var.compute_cluster_id
     freeform_tags                       = var.freeform_tags
     defined_tags                        = var.defined_tags
 
@@ -59,6 +68,7 @@ resource "oci_containerengine_node_pool" "managed" {
         availability_domain     = ad.value
         subnet_id               = var.subnet_id
         capacity_reservation_id = var.capacity_reservation_id
+        host_group_id           = var.host_group_id
         fault_domains           = var.placement_fds
 
         dynamic "preemptible_node_config" {
@@ -153,6 +163,11 @@ resource "oci_containerengine_node_pool" "managed" {
     }
 
     precondition {
+      condition     = (var.compute_cluster_id == null && var.host_group_id == null) || length(var.availability_domains) == 1
+      error_message = "A compute cluster or host group lives in one availability domain, so the pool must use a single one (pool ${var.name})."
+    }
+
+    precondition {
       condition     = !local.is_npn || var.pod_subnet_id != null
       error_message = "pod_subnet_id is required for npn (OCI_VCN_IP_NATIVE) node pools (pool ${var.name})."
     }
@@ -178,11 +193,20 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   defined_tags        = var.defined_tags
   node_metadata       = local.node_metadata
 
+  # ZPR security attributes on each node's primary VNIC. Sent only when set.
+  dynamic "primary_vnic" {
+    for_each = length(var.security_attributes) > 0 ? [1] : []
+    content {
+      security_attributes = var.security_attributes
+    }
+  }
+
   node_config_details {
     size                                = var.size
     nsg_ids                             = var.nsg_ids
     kms_key_id                          = var.volume_kms_key_id
     is_pv_encryption_in_transit_enabled = var.pv_transit_encryption
+    compute_cluster_id                  = var.compute_cluster_id
     freeform_tags                       = var.freeform_tags
     defined_tags                        = var.defined_tags
 
@@ -193,6 +217,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
         availability_domain     = ad.value
         subnet_id               = var.subnet_id
         capacity_reservation_id = var.capacity_reservation_id
+        host_group_id           = var.host_group_id
         fault_domains           = var.placement_fds
 
         dynamic "preemptible_node_config" {
@@ -285,6 +310,11 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     precondition {
       condition     = var.capacity_reservation_id == null || length(var.availability_domains) == 1
       error_message = "A single availability domain must be specified when using a capacity reservation (pool ${var.name})."
+    }
+
+    precondition {
+      condition     = (var.compute_cluster_id == null && var.host_group_id == null) || length(var.availability_domains) == 1
+      error_message = "A compute cluster or host group lives in one availability domain, so the pool must use a single one (pool ${var.name})."
     }
 
     precondition {

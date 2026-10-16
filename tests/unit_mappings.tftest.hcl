@@ -274,3 +274,49 @@ run "virtual_pool_node_cycling_rejects_bad_value" {
 
   expect_failures = [var.virtual_node_pools]
 }
+
+# --- Placement and ZPR attributes ---------------------------------------------
+
+# command = apply: the node pool output is unknown at plan time under the mock.
+run "node_pool_placement_and_zpr_reach_resource" {
+  command = apply
+
+  variables {
+    cluster_type = "enhanced"
+    node_pools = {
+      gpu = {
+        shape                = "BM.GPU.H100.8"
+        availability_domains = [1]
+        compute_cluster_id   = "ocid1.computecluster.oc1..aaaaaaaaunit"
+        host_group_id        = "ocid1.computehostgroup.oc1..aaaaaaaaunit"
+        security_attributes  = { "oracle-zpr.sensitivity.value" = "low" }
+      }
+    }
+  }
+
+  assert {
+    condition     = output.node_pools["gpu"].node_config_details[0].compute_cluster_id == "ocid1.computecluster.oc1..aaaaaaaaunit"
+    error_message = "node_pools[*].compute_cluster_id must reach node_config_details"
+  }
+  assert {
+    condition     = one([for p in output.node_pools["gpu"].node_config_details[0].placement_configs : p.host_group_id]) == "ocid1.computehostgroup.oc1..aaaaaaaaunit"
+    error_message = "node_pools[*].host_group_id must reach placement_configs"
+  }
+  assert {
+    condition     = output.node_pools["gpu"].primary_vnic[0].security_attributes["oracle-zpr.sensitivity.value"] == "low"
+    error_message = "node_pools[*].security_attributes must reach the primary VNIC"
+  }
+}
+
+run "control_plane_security_attributes_reach_endpoint" {
+  command = plan
+
+  variables {
+    control_plane_security_attributes = { "oracle-zpr.sensitivity.value" = "low" }
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].endpoint_config[0].security_attributes["oracle-zpr.sensitivity.value"] == "low"
+    error_message = "control_plane_security_attributes must reach endpoint_config"
+  }
+}
