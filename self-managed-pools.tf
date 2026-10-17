@@ -10,7 +10,19 @@ module "self_managed_node_pool" {
   source   = "./modules/self-managed-node-pool"
   for_each = local.self_managed_node_pools
 
-  depends_on = [oci_containerengine_cluster.this]
+  # The NSG rules too, not just the cluster: on destroy, pools must go first,
+  # while nodes can still reach the control plane to finish draining. Without
+  # this, Terraform deletes the rules in parallel with the pools and the drain
+  # never completes.
+  depends_on = [
+    oci_containerengine_cluster.this,
+    oci_core_network_security_group_security_rule.control_plane_ingress,
+    oci_core_network_security_group_security_rule.control_plane_egress,
+    oci_core_network_security_group_security_rule.control_plane_recommended,
+    oci_core_network_security_group_security_rule.worker_ingress,
+    oci_core_network_security_group_security_rule.worker_egress,
+    oci_core_network_security_group_security_rule.worker_recommended,
+  ]
 
   name           = each.key
   compartment_id = coalesce(each.value.compartment_id, var.compartment_id)

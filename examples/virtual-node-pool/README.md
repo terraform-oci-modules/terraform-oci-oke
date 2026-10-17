@@ -4,12 +4,9 @@ Demonstrates a virtual node pool (`oci_containerengine_virtual_node_pool`), the
 OKE analog of EKS Fargate profiles. Virtual node pools require an **enhanced**
 cluster with the **npn** (VCN-native) CNI and `Pod.Standard.*` shapes.
 
-> **`terraform destroy` on this example can hang or fail.** Virtual node pool
-> deletion on `enhanced` clusters has been observed getting stuck in
-> `NEEDS_ATTENTION` with no error detail from OCI. If that happens, don't
-> assume `terraform destroy` succeeded, verify with `oci ce virtual-node-pool
-> list` and see [docs/testing.md](../../docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
-> for the force-delete workaround.
+> If a virtual node pool delete gets stuck in `NEEDS_ATTENTION`, see
+> [docs/testing.md](../../docs/testing.md#node-pool-teardown) for the
+> force-delete workaround.
 
 ## Usage
 

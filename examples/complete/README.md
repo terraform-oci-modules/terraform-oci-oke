@@ -4,11 +4,9 @@ Full-featured example: an **enhanced** OKE cluster with **VCN-native (npn)** pod
 networking, OIDC discovery (workload identity), an OKE-managed addon (CoreDNS),
 a managed node pool, and a virtual (serverless) node pool.
 
-> **Applying or destroying this example can fail with OCI platform errors
-> specific to `enhanced` clusters.** Node pool / virtual node pool deletion
-> can hang in `NEEDS_ATTENTION` with no error detail. This is an OCI-side
-> issue, not something this module's config controls. See [docs/testing.md](../../docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
-> for what to expect and the force-delete workaround if teardown gets stuck.
+> If a node pool delete gets stuck in `NEEDS_ATTENTION`, see
+> [docs/testing.md](../../docs/testing.md#node-pool-teardown) for the
+> force-delete workaround.
 
 ## Usage
 

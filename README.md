@@ -60,14 +60,10 @@ OKE-managed addons (`addons`) require `cluster_type = "enhanced"`.
 > actually replace nodes; self-managed pools have no automated rolling-upgrade path at
 > all. See [docs/upgrades.md](docs/upgrades.md) for the full, live-verified behavior.
 
-> **`enhanced` clusters have known OCI-side reliability issues on this
-> module's tested tenancy**, independent of anything this module configures:
-> `addons` creation can race with OKE's own addon provisioning on a
-> brand-new cluster, and node pool / virtual node pool deletion can hang in
-> `NEEDS_ATTENTION` with no error detail from OCI. Both were reproduced
-> repeatedly against a real tenancy; neither reproduces on `basic` clusters.
-> See [docs/testing.md](docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
-> for what to expect and the force-delete workaround.
+> **Destroying a cluster created with an older version of this module:** run one
+> `terraform apply` with this version first. Older versions let Terraform delete the
+> NSG rules before the node pools, which made pool deletes hang and fail. See
+> [docs/testing.md](docs/testing.md#node-pool-teardown).
 
 ## Cluster add-ons
 
