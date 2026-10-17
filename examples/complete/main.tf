@@ -84,9 +84,9 @@ module "oke" {
 
   # OKE-managed addons (enhanced clusters only). CoreDNS/KubeProxy/CNI are
   # essential and always managed by OKE, so enable only optional add-ons here.
-  # override_existing: OKE can stage a default install of an addon on new
-  # enhanced clusters before Terraform's create call lands, which otherwise
-  # races and fails with "expected ACTIVE, got DELETING".
+  # override_existing: take over an install OKE already has in place instead
+  # of conflicting with it. KubernetesMetricsServer needs CertManager; the
+  # module installs CertManager first.
   addons = {
     KubernetesMetricsServer = { override_existing = true }
     CertManager             = { override_existing = true }

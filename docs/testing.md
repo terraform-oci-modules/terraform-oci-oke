@@ -162,15 +162,12 @@ is the fix regardless of `cluster_type`.
    VCN's NSGs, subnets, route tables, gateways, and finally the VCN itself, in that dependency
    order.
 
-2. **`addons` creation can race with OKE's own addon provisioning on new enhanced
-   clusters.** Observed repeatedly and consistently with `KubernetesMetricsServer`: Terraform's
-   create call fails with `expected ACTIVE, got DELETING`. Setting `override_existing = true` on
-   the addon (which allows taking over an addon already installed out-of-band) does **not** fix
-   this, that hypothesis was tested and disproven. No workaround has been found yet beyond
-   retrying `terraform apply`. Likely the same underlying enhanced-cluster provisioning
-   reliability issue as (1), though this has not been confirmed against OCI's internals.
+2. **Resolved: `KubernetesMetricsServer` failed with `expected ACTIVE, got DELETING`.** This
+   was not a race. The add-on's install fails with "Need to install CertManager addon" (visible in
+   the `ENABLE_ADDON` work request errors) when CertManager is installed at the same time. The
+   module now creates CertManager first and the other add-ons after it.
 
-Neither issue reproduces on `basic` clusters. If you hit either while testing, verify and clean up
+If you hit (1) while testing, verify and clean up
 manually with the OCI CLI (`oci ce cluster list` / `node-pool list` / `virtual-node-pool list` /
 `network vcn list`, scoped to your compartment) rather than assuming `terraform test`'s automatic
 teardown succeeded.

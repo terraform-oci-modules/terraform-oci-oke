@@ -79,10 +79,9 @@ module "oke" {
 
   addons = {
     # Optional add-on, latest version, default configuration.
-    # override_existing: OKE can stage a default install of this addon on new
-    # enhanced clusters before Terraform's create call lands, which otherwise
-    # races and fails with "expected ACTIVE, got DELETING". true takes over
-    # whatever OKE already has in place instead of conflicting with it.
+    # override_existing: take over an install OKE already has in place instead
+    # of conflicting with it. KubernetesMetricsServer needs CertManager; the
+    # module installs CertManager first.
     KubernetesMetricsServer = {
       override_existing = true
     }

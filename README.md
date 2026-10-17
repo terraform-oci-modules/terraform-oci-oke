@@ -259,6 +259,7 @@ module can also create its own NSGs:
 
 | Name | Type |
 | ---- | ---- |
+| [oci_containerengine_addon.primary](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_addon) | resource |
 | [oci_containerengine_addon.this](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_addon) | resource |
 | [oci_containerengine_cluster.this](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_cluster) | resource |
 | [oci_core_network_security_group.control_plane](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_network_security_group) | resource |

@@ -16,11 +16,9 @@ oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].nam
 > (dynamic group + policy) granted outside this module.
 
 > **Applying or destroying this example can fail with OCI platform errors
-> specific to `enhanced` clusters.** Addon creation (`KubernetesMetricsServer`
-> in particular) has been observed racing with OKE's own addon provisioning
-> on brand-new clusters (`expected ACTIVE, got DELETING`), and node pool
-> deletion can hang in `NEEDS_ATTENTION` with no error detail. Both are
-> OCI-side issues, not something this module's config controls. See
+> specific to `enhanced` clusters.** Node pool deletion can hang in
+> `NEEDS_ATTENTION` with no error detail. This is an OCI-side issue, not
+> something this module's config controls. See
 > [docs/testing.md](../../docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
 > for what to expect and the force-delete workaround if teardown gets stuck.
 

@@ -34,7 +34,7 @@ mock_provider "oci" {
 
   mock_data "oci_containerengine_addon_options" {
     defaults = {
-      addon_options = [{ name = "CertManager" }]
+      addon_options = [{ name = "CertManager" }, { name = "KubernetesMetricsServer" }]
     }
   }
 
@@ -318,5 +318,32 @@ run "control_plane_security_attributes_reach_endpoint" {
   assert {
     condition     = oci_containerengine_cluster.this[0].endpoint_config[0].security_attributes["oracle-zpr.sensitivity.value"] == "low"
     error_message = "control_plane_security_attributes must reach endpoint_config"
+  }
+}
+
+run "cert_manager_installs_before_other_addons" {
+  command = plan
+
+  variables {
+    cluster_type = "enhanced"
+    addons = {
+      CertManager             = {}
+      KubernetesMetricsServer = {}
+    }
+  }
+
+  # KubernetesMetricsServer fails to install without CertManager, so CertManager
+  # is its own resource and the other add-ons depend on it.
+  assert {
+    condition     = keys(oci_containerengine_addon.primary) == ["CertManager"]
+    error_message = "CertManager must be created by the primary addon resource"
+  }
+  assert {
+    condition     = keys(oci_containerengine_addon.this) == ["KubernetesMetricsServer"]
+    error_message = "other add-ons must be created by the secondary addon resource"
+  }
+  assert {
+    condition     = keys(output.cluster_addons) == ["CertManager", "KubernetesMetricsServer"]
+    error_message = "the cluster_addons output must include both resources"
   }
 }

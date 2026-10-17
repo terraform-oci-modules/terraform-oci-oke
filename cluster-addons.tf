@@ -15,10 +15,16 @@ locals {
   supported_addons = try([for o in data.oci_containerengine_addon_options.this[0].addon_options : o.name], [])
 
   addons = local.create ? var.addons : {}
+
+  # Add-ons other add-ons need at install time (KubernetesMetricsServer needs
+  # CertManager for its certificate). They are created first.
+  primary_addon_names = ["CertManager"]
+  primary_addons      = { for k, v in local.addons : k => v if contains(local.primary_addon_names, k) }
+  secondary_addons    = { for k, v in local.addons : k => v if !contains(local.primary_addon_names, k) }
 }
 
-resource "oci_containerengine_addon" "this" {
-  for_each = local.addons
+resource "oci_containerengine_addon" "primary" {
+  for_each = local.primary_addons
 
   depends_on = [oci_containerengine_cluster.this]
 
@@ -55,6 +61,49 @@ resource "oci_containerengine_addon" "this" {
   }
 }
 
+resource "oci_containerengine_addon" "this" {
+  for_each = local.secondary_addons
+
+  depends_on = [oci_containerengine_cluster.this, oci_containerengine_addon.primary]
+
+  addon_name                       = each.key
+  cluster_id                       = local.cluster_id
+  remove_addon_resources_on_delete = each.value.remove_addon_resources_on_delete
+  override_existing                = each.value.override_existing
+  version                          = each.value.version
+
+  dynamic "configurations" {
+    for_each = each.value.configurations
+    content {
+      key   = tostring(configurations.value.key)
+      value = tostring(configurations.value.value)
+    }
+  }
+
+  timeouts {
+    create = each.value.timeouts.create
+    update = each.value.timeouts.update
+    delete = each.value.timeouts.delete
+  }
+
+  lifecycle {
+    precondition {
+      condition     = local.cluster_type_api == "ENHANCED_CLUSTER"
+      error_message = "Cluster addons (addons) require cluster_type = \"enhanced\"."
+    }
+
+    precondition {
+      condition     = contains(local.supported_addons, each.key)
+      error_message = "Addon ${each.key} is not supported for kubernetes_version ${var.kubernetes_version}. Supported: ${join(", ", local.supported_addons)}."
+    }
+  }
+}
+
+moved {
+  from = oci_containerengine_addon.this["CertManager"]
+  to   = oci_containerengine_addon.primary["CertManager"]
+}
+
 ################################################################################
 # Addon removal  (maps to the old module's addons_to_remove)
 #
@@ -67,7 +116,7 @@ resource "oci_containerengine_addon" "this" {
 resource "terraform_data" "remove_addon" {
   for_each = local.create ? var.addons_to_remove : {}
 
-  depends_on = [oci_containerengine_addon.this]
+  depends_on = [oci_containerengine_addon.primary, oci_containerengine_addon.this]
 
   triggers_replace = [each.key, each.value.remove_k8s_resources]
 

@@ -22,7 +22,7 @@ run "creates_complete_cluster" {
     error_message = "Virtual node pool must be created"
   }
   assert {
-    condition     = length(output.cluster_addons) == 1
-    error_message = "CoreDNS addon must be created"
+    condition     = length(output.cluster_addons) == 2
+    error_message = "Both optional add-ons (CertManager, KubernetesMetricsServer) must be created"
   }
 }
