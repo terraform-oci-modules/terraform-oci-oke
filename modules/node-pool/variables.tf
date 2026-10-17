@@ -190,6 +190,24 @@ variable "capacity_reservation_id" {
   default     = null
 }
 
+variable "compute_cluster_id" {
+  description = "Compute cluster OCID to place the nodes in (RDMA / GPU clusters). Requires a single availability domain."
+  type        = string
+  default     = null
+}
+
+variable "host_group_id" {
+  description = "Host group OCID to place the nodes on dedicated hosts. Requires a single availability domain. Applied at pool creation (placement_configs changes are ignored afterwards)."
+  type        = string
+  default     = null
+}
+
+variable "security_attributes" {
+  description = "Zero Trust Packet Routing (ZPR) security attributes for each node's primary VNIC, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }. Leave unset (null) to send nothing. To remove attributes that were set, pass {}: removing the input keeps the current attributes, because the provider treats a missing value as \"keep\"."
+  type        = map(string)
+  default     = null
+}
+
 variable "preemptible_config" {
   description = "Preemptible node configuration."
   type = object({
@@ -205,6 +223,11 @@ variable "eviction_grace_duration" {
   type        = number
   default     = 300
   nullable    = false
+
+  validation {
+    condition     = var.eviction_grace_duration >= 0 && var.eviction_grace_duration <= 3600 && floor(var.eviction_grace_duration) == var.eviction_grace_duration
+    error_message = "eviction_grace_duration must be a whole number of seconds between 0 and 3600."
+  }
 }
 
 variable "force_node_delete" {
@@ -222,9 +245,9 @@ variable "force_node_action" {
 }
 
 variable "node_cycling" {
-  description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\"."
+  description = "Node pool cycling configuration. Requires cluster_type = \"enhanced\". enabled: null (default) sends nothing; true turns cycling on; false turns it off. To turn cycling off after it was on, set enabled = false: removing node_cycling keeps the current setting, because the provider treats a missing block as \"keep\"."
   type = object({
-    enabled             = optional(bool, false)
+    enabled             = optional(bool)
     maximum_surge       = optional(string, "1")
     maximum_unavailable = optional(string, "1")
     cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])

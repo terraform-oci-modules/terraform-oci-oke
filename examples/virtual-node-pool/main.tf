@@ -7,7 +7,7 @@ locals {
   region = "us-ashburn-1"
 
   vcn_cidr           = "10.0.0.0/16"
-  kubernetes_version = "v1.36.1"
+  kubernetes_version = "v1.36.4"
 
   tags = {
     Example    = local.name
@@ -75,6 +75,13 @@ module "oke" {
       node_labels          = { "pool" = "virtual" }
       taints = {
         dedicated = { value = "virtual", effect = "NoSchedule" }
+      }
+      # Replace running virtual nodes one at a time when the pool's
+      # configuration changes, never dropping below the current size.
+      node_cycling = {
+        enabled             = true
+        maximum_surge       = "1"
+        maximum_unavailable = "0"
       }
     }
   }

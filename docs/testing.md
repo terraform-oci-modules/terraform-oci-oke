@@ -117,6 +117,28 @@ is the fix regardless of `cluster_type`.
    underlying issue with more diagnostic detail available, or a related-but-distinct failure mode.
    Either way the fix is the same manual force-delete below.
 
+   **Update (2026-10-15):** reproduced four times on provider 9.9.0 with a virtual pool that
+   ran no workloads. The virtual pool delete sits on "Terminating all instances from virtual
+   node pool" with the virtual nodes `ACTIVE`, then fails after exactly 61 minutes (the 60
+   minute grace period plus overhead) with an empty work-request error and the pool in
+   `NEEDS_ATTENTION`. Teardown order does not matter: it failed the same way when the virtual
+   pool was deleted first, with the managed nodes still up to take evicted pods. OKE does not
+   force-terminate at the end of the grace period for virtual pools, and the provider has no
+   argument to make it, so plan on the force-delete below (it finishes in about 3 minutes).
+
+   The same run showed it for a managed pool too. With the virtual pool gone, the last managed
+   pool (one node, `eviction_grace_duration = 3600`, `force_node_delete = false`) sat draining
+   for the full hour and failed with `"1 nodes(s) pod eviction timeout"` into
+   `NEEDS_ATTENTION`. Terminating the node's compute instance mid-drain did not help: OKE kept
+   waiting on the drain. The force-delete below then took 33 seconds. On managed pools,
+   `force_node_delete = true` makes OKE delete the nodes when the grace period ends instead of
+   failing.
+
+   A virtual pool **create** can also hang: once the provider polled a create work request for
+   about 32 hours while the pool and its nodes had been `ACTIVE` within seconds, then failed
+   with a 404 when the work request expired and left the pool tainted in state. Setting
+   `timeouts.create` on virtual pools (for example `"30m"`) bounds that wait.
+
    `terraform test`'s own teardown does not retry this and leaves the cluster, node pool/virtual
    node pool, NSGs, and full VCN (subnets, gateways, route tables) in the compartment. This module
    sets `timeouts { delete = "75m" }` on the node pool and virtual node pool resources so Terraform
@@ -140,15 +162,12 @@ is the fix regardless of `cluster_type`.
    VCN's NSGs, subnets, route tables, gateways, and finally the VCN itself, in that dependency
    order.
 
-2. **`addons` creation can race with OKE's own addon provisioning on new enhanced
-   clusters.** Observed repeatedly and consistently with `KubernetesMetricsServer`: Terraform's
-   create call fails with `expected ACTIVE, got DELETING`. Setting `override_existing = true` on
-   the addon (which allows taking over an addon already installed out-of-band) does **not** fix
-   this, that hypothesis was tested and disproven. No workaround has been found yet beyond
-   retrying `terraform apply`. Likely the same underlying enhanced-cluster provisioning
-   reliability issue as (1), though this has not been confirmed against OCI's internals.
+2. **Resolved: `KubernetesMetricsServer` failed with `expected ACTIVE, got DELETING`.** This
+   was not a race. The add-on's install fails with "Need to install CertManager addon" (visible in
+   the `ENABLE_ADDON` work request errors) when CertManager is installed at the same time. The
+   module now creates CertManager first and the other add-ons after it.
 
-Neither issue reproduces on `basic` clusters. If you hit either while testing, verify and clean up
+If you hit (1) while testing, verify and clean up
 manually with the OCI CLI (`oci ce cluster list` / `node-pool list` / `virtual-node-pool list` /
 `network vcn list`, scoped to your compartment) rather than assuming `terraform test`'s automatic
 teardown succeeded.

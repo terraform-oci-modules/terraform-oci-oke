@@ -9,18 +9,16 @@ Turn an optional add-on **on** by adding its key to `addons`; turn it
 **off** by removing the key. The catalog is Kubernetes-version specific:
 
 ```bash
-oci ce addon-option list --kubernetes-version v1.36.1 --all --query 'data[*].name'
+oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].name'
 ```
 
 > `ClusterAutoscaler` and `ObservabilityAgent` call OCI APIs and require IAM
 > (dynamic group + policy) granted outside this module.
 
 > **Applying or destroying this example can fail with OCI platform errors
-> specific to `enhanced` clusters.** Addon creation (`KubernetesMetricsServer`
-> in particular) has been observed racing with OKE's own addon provisioning
-> on brand-new clusters (`expected ACTIVE, got DELETING`), and node pool
-> deletion can hang in `NEEDS_ATTENTION` with no error detail. Both are
-> OCI-side issues, not something this module's config controls. See
+> specific to `enhanced` clusters.** Node pool deletion can hang in
+> `NEEDS_ATTENTION` with no error detail. This is an OCI-side issue, not
+> something this module's config controls. See
 > [docs/testing.md](../../docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
 > for what to expect and the force-delete workaround if teardown gets stuck.
 
@@ -37,7 +35,7 @@ terraform plan -var 'compartment_id=<your-compartment-ocid>'
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 6.0 |
+| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 8.21.0 |
 
 ## Providers
 

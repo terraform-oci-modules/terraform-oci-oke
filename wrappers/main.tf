@@ -22,6 +22,7 @@ module "wrapper" {
   control_plane_nsg_enable_recommended_rules = try(each.value.control_plane_nsg_enable_recommended_rules, var.defaults.control_plane_nsg_enable_recommended_rules, true)
   control_plane_nsg_ids                      = try(each.value.control_plane_nsg_ids, var.defaults.control_plane_nsg_ids, [])
   control_plane_nsg_ingress_rules            = try(each.value.control_plane_nsg_ingress_rules, var.defaults.control_plane_nsg_ingress_rules, {})
+  control_plane_security_attributes          = try(each.value.control_plane_security_attributes, var.defaults.control_plane_security_attributes, null)
   control_plane_subnet_id                    = try(each.value.control_plane_subnet_id, var.defaults.control_plane_subnet_id)
   create                                     = try(each.value.create, var.defaults.create, true)
   create_control_plane_log_group             = try(each.value.create_control_plane_log_group, var.defaults.create_control_plane_log_group, false)

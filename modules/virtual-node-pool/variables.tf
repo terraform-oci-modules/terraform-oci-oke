@@ -89,6 +89,25 @@ variable "taints" {
   nullable = false
 }
 
+variable "node_cycling" {
+  description = "Virtual node cycling: replaces running virtual nodes when the pool's configuration changes. maximum_surge and maximum_unavailable take a count or a percentage. enabled: null (default) sends nothing; true turns cycling on; false turns it off. To turn cycling off after it was on, set enabled = false: removing node_cycling keeps the current setting, because the provider treats a missing block as \"keep\"."
+  type = object({
+    enabled             = optional(bool)
+    maximum_surge       = optional(string, "1")
+    maximum_unavailable = optional(string, "0")
+  })
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for v in [var.node_cycling.maximum_surge, var.node_cycling.maximum_unavailable] :
+      can(regex("^([0-9]+|([0-9]|[1-9][0-9]|100)%)$", v))
+    ])
+    error_message = "node_cycling.maximum_surge and maximum_unavailable must be a whole number or a percentage from 0% to 100%."
+  }
+}
+
 variable "freeform_tags" {
   description = "Freeform tags applied to the virtual node pool."
   type        = map(string)

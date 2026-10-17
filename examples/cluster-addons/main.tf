@@ -7,7 +7,7 @@ locals {
   region = "us-ashburn-1"
 
   vcn_cidr           = "10.0.0.0/16"
-  kubernetes_version = "v1.36.1"
+  kubernetes_version = "v1.36.4"
 
   tags = {
     Example    = local.name
@@ -44,7 +44,7 @@ module "vcn" {
 # Add-ons are OKE-managed: OKE installs/upgrades/reconciles them. Add a key to
 # turn an optional add-on on; remove it to turn it off. List the catalog for a
 # version with:
-#   oci ce addon-option list --kubernetes-version v1.36.1 --all --query 'data[*].name'
+#   oci ce addon-option list --kubernetes-version v1.36.4 --all --query 'data[*].name'
 ################################################################################
 
 module "oke" {
@@ -79,10 +79,9 @@ module "oke" {
 
   addons = {
     # Optional add-on, latest version, default configuration.
-    # override_existing: OKE can stage a default install of this addon on new
-    # enhanced clusters before Terraform's create call lands, which otherwise
-    # races and fails with "expected ACTIVE, got DELETING". true takes over
-    # whatever OKE already has in place instead of conflicting with it.
+    # override_existing: take over an install OKE already has in place instead
+    # of conflicting with it. KubernetesMetricsServer needs CertManager; the
+    # module installs CertManager first.
     KubernetesMetricsServer = {
       override_existing = true
     }

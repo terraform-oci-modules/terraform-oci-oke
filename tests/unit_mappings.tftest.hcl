@@ -34,7 +34,7 @@ mock_provider "oci" {
 
   mock_data "oci_containerengine_addon_options" {
     defaults = {
-      addon_options = [{ name = "CertManager" }]
+      addon_options = [{ name = "CertManager" }, { name = "KubernetesMetricsServer" }]
     }
   }
 
@@ -179,5 +179,171 @@ run "managed_pool_accepts_per_pool_node_metadata" {
   assert {
     condition     = var.node_pools["app"].node_metadata["pool"] == "p"
     error_message = "node_pools must expose a per-pool node_metadata map"
+  }
+}
+
+# --- Typed rule / OIDC inputs ----------------------------------------------
+
+run "typed_worker_ingress_rule_maps_to_resource" {
+  command = plan
+
+  variables {
+    create_worker_nsg = true
+    worker_nsg_ingress_rules = {
+      https = {
+        protocol    = "6"
+        source      = "10.0.0.0/16"
+        tcp_options = { min = 443, max = 443 }
+      }
+    }
+  }
+
+  assert {
+    condition     = oci_core_network_security_group_security_rule.worker_ingress["https"].source_type == "CIDR_BLOCK"
+    error_message = "source_type must default to CIDR_BLOCK"
+  }
+
+  assert {
+    condition     = oci_core_network_security_group_security_rule.worker_ingress["https"].tcp_options[0].destination_port_range[0].min == 443
+    error_message = "tcp_options.min must map to destination_port_range.min"
+  }
+}
+
+run "typed_oidc_config_maps_required_claims" {
+  command = plan
+
+  variables {
+    enable_oidc_token_auth = true
+    oidc_token_authentication_config = {
+      issuer_url      = "https://issuer.example.com"
+      client_id       = "oke"
+      required_claims = [{ key = "aud", value = "oke" }]
+    }
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].options[0].open_id_connect_token_authentication_config[0].issuer_url == "https://issuer.example.com"
+    error_message = "issuer_url must reach the cluster OIDC config"
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].options[0].open_id_connect_token_authentication_config[0].required_claims[0].key == "aud"
+    error_message = "required_claims must map to required_claims blocks"
+  }
+}
+
+# --- Virtual node pool cycling -----------------------------------------------
+
+run "virtual_pool_node_cycling_reaches_resource" {
+  command = plan
+
+  variables {
+    cluster_type  = "enhanced"
+    cni_type      = "npn"
+    pod_subnet_id = "ocid1.subnet.oc1..aaaaaaaapod"
+    virtual_node_pools = {
+      vnp = {
+        node_cycling = { enabled = true, maximum_surge = "2" }
+      }
+    }
+  }
+
+  assert {
+    condition     = output.virtual_node_pools["vnp"].virtual_node_pool_cycling_details[0].maximum_surge == "2"
+    error_message = "virtual_node_pools[*].node_cycling must reach virtual_node_pool_cycling_details"
+  }
+  assert {
+    condition     = output.virtual_node_pools["vnp"].virtual_node_pool_cycling_details[0].maximum_unavailable == "0"
+    error_message = "maximum_unavailable must default to OCI's 0"
+  }
+}
+
+run "virtual_pool_node_cycling_rejects_bad_value" {
+  command = plan
+
+  variables {
+    cluster_type  = "enhanced"
+    cni_type      = "npn"
+    pod_subnet_id = "ocid1.subnet.oc1..aaaaaaaapod"
+    virtual_node_pools = {
+      vnp = {
+        node_cycling = { enabled = true, maximum_unavailable = "-1" }
+      }
+    }
+  }
+
+  expect_failures = [var.virtual_node_pools]
+}
+
+# --- Placement and ZPR attributes ---------------------------------------------
+
+# command = apply: the node pool output is unknown at plan time under the mock.
+run "node_pool_placement_and_zpr_reach_resource" {
+  command = apply
+
+  variables {
+    cluster_type = "enhanced"
+    node_pools = {
+      gpu = {
+        shape                = "BM.GPU.H100.8"
+        availability_domains = [1]
+        compute_cluster_id   = "ocid1.computecluster.oc1..aaaaaaaaunit"
+        host_group_id        = "ocid1.computehostgroup.oc1..aaaaaaaaunit"
+        security_attributes  = { "oracle-zpr.sensitivity.value" = "low" }
+      }
+    }
+  }
+
+  assert {
+    condition     = output.node_pools["gpu"].node_config_details[0].compute_cluster_id == "ocid1.computecluster.oc1..aaaaaaaaunit"
+    error_message = "node_pools[*].compute_cluster_id must reach node_config_details"
+  }
+  assert {
+    condition     = one([for p in output.node_pools["gpu"].node_config_details[0].placement_configs : p.host_group_id]) == "ocid1.computehostgroup.oc1..aaaaaaaaunit"
+    error_message = "node_pools[*].host_group_id must reach placement_configs"
+  }
+  assert {
+    condition     = output.node_pools["gpu"].primary_vnic[0].security_attributes["oracle-zpr.sensitivity.value"] == "low"
+    error_message = "node_pools[*].security_attributes must reach the primary VNIC"
+  }
+}
+
+run "control_plane_security_attributes_reach_endpoint" {
+  command = plan
+
+  variables {
+    control_plane_security_attributes = { "oracle-zpr.sensitivity.value" = "low" }
+  }
+
+  assert {
+    condition     = oci_containerengine_cluster.this[0].endpoint_config[0].security_attributes["oracle-zpr.sensitivity.value"] == "low"
+    error_message = "control_plane_security_attributes must reach endpoint_config"
+  }
+}
+
+run "cert_manager_installs_before_other_addons" {
+  command = plan
+
+  variables {
+    cluster_type = "enhanced"
+    addons = {
+      CertManager             = {}
+      KubernetesMetricsServer = {}
+    }
+  }
+
+  # KubernetesMetricsServer fails to install without CertManager, so CertManager
+  # is its own resource and the other add-ons depend on it.
+  assert {
+    condition     = keys(oci_containerengine_addon.primary) == ["CertManager"]
+    error_message = "CertManager must be created by the primary addon resource"
+  }
+  assert {
+    condition     = keys(oci_containerengine_addon.this) == ["KubernetesMetricsServer"]
+    error_message = "other add-ons must be created by the secondary addon resource"
+  }
+  assert {
+    condition     = keys(output.cluster_addons) == ["CertManager", "KubernetesMetricsServer"]
+    error_message = "the cluster_addons output must include both resources"
   }
 }

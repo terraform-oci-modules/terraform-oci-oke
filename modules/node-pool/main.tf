@@ -11,6 +11,16 @@ locals {
   is_npn         = var.cni_type == "npn"
   memory_clamped = (var.memory / var.ocpus) > 64 ? var.ocpus * 64 : var.memory
 
+  # ISO 8601 in the canonical form OCI stores it (PT1H, PT5M, PT1M30S, PT45S).
+  # Any other spelling of the same duration (e.g. PT60M, PT90S) plans a diff on
+  # every run.
+  eviction_grace_duration = (
+    var.eviction_grace_duration >= 3600 ? "PT1H" :
+    var.eviction_grace_duration < 60 ? format("PT%dS", var.eviction_grace_duration) :
+    var.eviction_grace_duration % 60 == 0 ? format("PT%dM", floor(var.eviction_grace_duration / 60)) :
+    format("PT%dM%dS", floor(var.eviction_grace_duration / 60), var.eviction_grace_duration % 60)
+  )
+
   node_metadata = merge(
     {
       apiserver_host           = var.apiserver_private_host
@@ -34,11 +44,20 @@ resource "oci_containerengine_node_pool" "managed" {
   defined_tags        = var.defined_tags
   node_metadata       = local.node_metadata
 
+  # ZPR security attributes on each node's primary VNIC. Sent only when set.
+  dynamic "primary_vnic" {
+    for_each = var.security_attributes != null ? [1] : []
+    content {
+      security_attributes = var.security_attributes
+    }
+  }
+
   node_config_details {
     size                                = var.size
     nsg_ids                             = var.nsg_ids
     kms_key_id                          = var.volume_kms_key_id
     is_pv_encryption_in_transit_enabled = var.pv_transit_encryption
+    compute_cluster_id                  = var.compute_cluster_id
     freeform_tags                       = var.freeform_tags
     defined_tags                        = var.defined_tags
 
@@ -49,6 +68,7 @@ resource "oci_containerengine_node_pool" "managed" {
         availability_domain     = ad.value
         subnet_id               = var.subnet_id
         capacity_reservation_id = var.capacity_reservation_id
+        host_group_id           = var.host_group_id
         fault_domains           = var.placement_fds
 
         dynamic "preemptible_node_config" {
@@ -96,18 +116,20 @@ resource "oci_containerengine_node_pool" "managed" {
   }
 
   node_eviction_node_pool_settings {
-    eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
+    eviction_grace_duration              = local.eviction_grace_duration
     is_force_delete_after_grace_duration = var.force_node_delete
     is_force_action_after_grace_duration = var.force_node_action
   }
 
   dynamic "node_pool_cycling_details" {
-    for_each = var.node_cycling.enabled ? [1] : []
+    # Sent when enabled is set, including false: omitting the block keeps the
+    # current setting. Basic clusters have no cycling, so false sends nothing.
+    for_each = var.node_cycling.enabled == true || (var.node_cycling.enabled == false && lower(var.cluster_type) == "enhanced") ? [1] : []
     content {
-      is_node_cycling_enabled = true
-      maximum_surge           = var.node_cycling.maximum_surge
-      maximum_unavailable     = var.node_cycling.maximum_unavailable
-      cycle_modes             = var.node_cycling.cycle_modes
+      is_node_cycling_enabled = var.node_cycling.enabled
+      maximum_surge           = var.node_cycling.enabled ? var.node_cycling.maximum_surge : null
+      maximum_unavailable     = var.node_cycling.enabled ? var.node_cycling.maximum_unavailable : null
+      cycle_modes             = var.node_cycling.enabled ? var.node_cycling.cycle_modes : null
     }
   }
 
@@ -143,12 +165,17 @@ resource "oci_containerengine_node_pool" "managed" {
     }
 
     precondition {
+      condition     = (var.compute_cluster_id == null && var.host_group_id == null) || length(var.availability_domains) == 1
+      error_message = "A compute cluster or host group lives in one availability domain, so the pool must use a single one (pool ${var.name})."
+    }
+
+    precondition {
       condition     = !local.is_npn || var.pod_subnet_id != null
       error_message = "pod_subnet_id is required for npn (OCI_VCN_IP_NATIVE) node pools (pool ${var.name})."
     }
 
     precondition {
-      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      condition     = var.node_cycling.enabled != true || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
   }
@@ -168,11 +195,20 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   defined_tags        = var.defined_tags
   node_metadata       = local.node_metadata
 
+  # ZPR security attributes on each node's primary VNIC. Sent only when set.
+  dynamic "primary_vnic" {
+    for_each = var.security_attributes != null ? [1] : []
+    content {
+      security_attributes = var.security_attributes
+    }
+  }
+
   node_config_details {
     size                                = var.size
     nsg_ids                             = var.nsg_ids
     kms_key_id                          = var.volume_kms_key_id
     is_pv_encryption_in_transit_enabled = var.pv_transit_encryption
+    compute_cluster_id                  = var.compute_cluster_id
     freeform_tags                       = var.freeform_tags
     defined_tags                        = var.defined_tags
 
@@ -183,6 +219,7 @@ resource "oci_containerengine_node_pool" "autoscaled" {
         availability_domain     = ad.value
         subnet_id               = var.subnet_id
         capacity_reservation_id = var.capacity_reservation_id
+        host_group_id           = var.host_group_id
         fault_domains           = var.placement_fds
 
         dynamic "preemptible_node_config" {
@@ -230,18 +267,20 @@ resource "oci_containerengine_node_pool" "autoscaled" {
   }
 
   node_eviction_node_pool_settings {
-    eviction_grace_duration              = var.eviction_grace_duration % 60 == 0 ? format("PT%dM", var.eviction_grace_duration / 60) : format("PT%dS", var.eviction_grace_duration)
+    eviction_grace_duration              = local.eviction_grace_duration
     is_force_delete_after_grace_duration = var.force_node_delete
     is_force_action_after_grace_duration = var.force_node_action
   }
 
   dynamic "node_pool_cycling_details" {
-    for_each = var.node_cycling.enabled ? [1] : []
+    # Sent when enabled is set, including false: omitting the block keeps the
+    # current setting. Basic clusters have no cycling, so false sends nothing.
+    for_each = var.node_cycling.enabled == true || (var.node_cycling.enabled == false && lower(var.cluster_type) == "enhanced") ? [1] : []
     content {
-      is_node_cycling_enabled = true
-      maximum_surge           = var.node_cycling.maximum_surge
-      maximum_unavailable     = var.node_cycling.maximum_unavailable
-      cycle_modes             = var.node_cycling.cycle_modes
+      is_node_cycling_enabled = var.node_cycling.enabled
+      maximum_surge           = var.node_cycling.enabled ? var.node_cycling.maximum_surge : null
+      maximum_unavailable     = var.node_cycling.enabled ? var.node_cycling.maximum_unavailable : null
+      cycle_modes             = var.node_cycling.enabled ? var.node_cycling.cycle_modes : null
     }
   }
 
@@ -278,12 +317,17 @@ resource "oci_containerengine_node_pool" "autoscaled" {
     }
 
     precondition {
+      condition     = (var.compute_cluster_id == null && var.host_group_id == null) || length(var.availability_domains) == 1
+      error_message = "A compute cluster or host group lives in one availability domain, so the pool must use a single one (pool ${var.name})."
+    }
+
+    precondition {
       condition     = !local.is_npn || var.pod_subnet_id != null
       error_message = "pod_subnet_id is required for npn (OCI_VCN_IP_NATIVE) node pools (pool ${var.name})."
     }
 
     precondition {
-      condition     = !var.node_cycling.enabled || lower(var.cluster_type) == "enhanced"
+      condition     = var.node_cycling.enabled != true || lower(var.cluster_type) == "enhanced"
       error_message = "node_cycling requires cluster_type = \"enhanced\" (pool ${var.name})."
     }
   }

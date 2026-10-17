@@ -12,6 +12,7 @@ module "wrapper" {
   fault_domains        = try(each.value.fault_domains, var.defaults.fault_domains, ["FAULT-DOMAIN-1", "FAULT-DOMAIN-2", "FAULT-DOMAIN-3"])
   freeform_tags        = try(each.value.freeform_tags, var.defaults.freeform_tags, {})
   name                 = try(each.value.name, var.defaults.name)
+  node_cycling         = try(each.value.node_cycling, var.defaults.node_cycling, {})
   node_labels          = try(each.value.node_labels, var.defaults.node_labels, {})
   nsg_ids              = try(each.value.nsg_ids, var.defaults.nsg_ids, [])
   pod_nsg_ids          = try(each.value.pod_nsg_ids, var.defaults.pod_nsg_ids, [])

@@ -10,8 +10,8 @@ run "creates_cluster_with_addons" {
     error_message = "Enhanced OKE cluster must be created"
   }
   assert {
-    condition     = length(output.cluster_addons) == 4
-    error_message = "All four addons (3 optional + CoreDNS) must be created"
+    condition     = length(output.cluster_addons) == 2
+    error_message = "Both optional add-ons (CertManager, KubernetesMetricsServer) must be created"
   }
   assert {
     condition     = length(output.node_pool_ids) == 1
