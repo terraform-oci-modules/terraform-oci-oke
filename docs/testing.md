@@ -86,69 +86,52 @@ security lists, in [service_load_balancers.md](service_load_balancers.md).
 > Delete the `Service` before `terraform destroy`. The load balancer belongs to the Service, not to
 > Terraform, so leaving it behind blocks subnet deletion and orphans a billable resource.
 
-## Known issue: node pool teardown can hang or fail on any cluster type
+## Node pool teardown
 
-> `node_cycling` (rolling node upgrades on managed pools) is a separate `enhanced`-only
-> requirement, unrelated to the teardown issue below. See
-> [docs/upgrades.md](upgrades.md).
+Until this was fixed (2026-10-17), deleting a cluster often failed: a node pool or virtual node
+pool delete drained for 60 minutes, then failed with an empty error and left the pool in
+`NEEDS_ATTENTION`. Virtual pools failed every time (6 of 6 runs), managed pools sometimes.
 
-Verified by running every apply-based test at least once against a real tenancy (2026-08-06).
-`simple`, `managed-node-pool`, and `self-managed-node-pool` (all `cluster_type = "basic"`) applied
-and destroyed cleanly that round. `virtual-node-pool`, `cluster-addons`, and `complete` (all
-`cluster_type = "enhanced"`) each hit at least one of two OCI-platform-side failures that same
-round, which at the time looked 100% correlated with `enhanced`.
+The cause was this module, not OCI. The pools referenced the NSGs but not their rules, so on
+destroy Terraform deleted all the NSG rules within seconds of starting the pool delete. The nodes
+then could not reach the control plane, the drain could never complete, and OKE gave up at the end
+of its 60-minute limit. The pools now depend on the NSG rules, so they are deleted first. Verified
+live: the virtual pool delete took 2.5 minutes and the `virtual-node-pool` test tore down cleanly.
 
-**Update (2026-08-21):** that correlation does not hold. Two consecutive live runs of
-`managed-node-pool` (`cluster_type = "basic"`) each hit the node-pool-stuck-in-`NEEDS_ATTENTION`
-failure below - a different pool each time (`autoscaled` the first run, `fixed` the second), both
-otherwise-default configuration. This is intermittent OCI-platform-side flakiness that can affect
-managed node pools on any cluster type, not just `enhanced`. The manual force-delete runbook below
-is the fix regardless of `cluster_type`.
+For a cluster created with an older version, run one `terraform apply` with the new version before
+`terraform destroy`, so the state records the new dependencies.
 
-1. **Node/virtual-node-pool deletion hangs or fails.** OCI cordons and drains pods before
-   terminating nodes. For **managed** node pools that grace period *is* configurable, and this
-   module already sets it to 5 minutes (`PT5M`) through the per-pool `eviction_grace_duration`
-   input (OCI's own ceiling is 60 minutes); for **virtual** node pools the provider exposes no
-   eviction settings at all. The hangs observed in the original 2026-08-06 testing happened anyway,
-   with the pool ending up in `NEEDS_ATTENTION` with an empty error list on both the pool and its
-   nodes and no diagnostic detail available, so the configured grace duration was not the cause.
-   The 2026-08-21 recurrence (see above) surfaced an actual work-request error message this time -
-   `"1 nodes(s) pod eviction timeout"` - rather than an empty error list, so this may be the same
-   underlying issue with more diagnostic detail available, or a related-but-distinct failure mode.
-   Either way the fix is the same manual force-delete below.
+If a pool delete still gets stuck, force it with the OCI CLI, whose delete-time grace-duration
+override has no Terraform equivalent:
 
-   `terraform test`'s own teardown does not retry this and leaves the cluster, node pool/virtual
-   node pool, NSGs, and full VCN (subnets, gateways, route tables) in the compartment. This module
-   sets `timeouts { delete = "75m" }` on the node pool and virtual node pool resources so Terraform
-   doesn't abort a slow-but-otherwise-healthy drain early, but that does **not** fix a genuinely
-   stuck deletion, only a premature-timeout one. When it happens, force it via the OCI CLI, whose
-   delete-time grace-duration override has no Terraform equivalent:
+```bash
+# Regular node pool
+oci ce node-pool delete --node-pool-id <ocid> \
+  --override-eviction-grace-duration PT0M \
+  --is-force-deletion-after-override-grace-duration true --force
 
-   ```bash
-   # Regular node pool
-   oci ce node-pool delete --node-pool-id <ocid> \
-     --override-eviction-grace-duration PT0M \
-     --is-force-deletion-after-override-grace-duration true --force
+# Virtual node pool
+oci ce virtual-node-pool delete --virtual-node-pool-id <ocid> \
+  --override-eviction-grace-duration-vnp PT0M \
+  --is-force-deletion-after-override-grace-duration-vnp true --force
+```
 
-   # Virtual node pool
-   oci ce virtual-node-pool delete --virtual-node-pool-id <ocid> \
-     --override-eviction-grace-duration-vnp PT0M \
-     --is-force-deletion-after-override-grace-duration-vnp true --force
-   ```
+Then delete the cluster (`oci ce cluster delete --cluster-id <ocid> --force`), followed by the
+VCN's NSGs, subnets, route tables, gateways, and finally the VCN itself, in that dependency order.
+`terraform test` does not retry a failed delete, so after a failure check with the OCI CLI
+(`oci ce cluster list`, `node-pool list`, `virtual-node-pool list`, `network vcn list`) instead of
+assuming its teardown succeeded.
 
-   Then delete the cluster (`oci ce cluster delete --cluster-id <ocid> --force`), followed by the
-   VCN's NSGs, subnets, route tables, gateways, and finally the VCN itself, in that dependency
-   order.
+On managed pools, `force_node_delete = true` makes OKE delete the nodes when the grace period ends
+instead of failing.
 
-2. **`addons` creation can race with OKE's own addon provisioning on new enhanced
-   clusters.** Observed repeatedly and consistently with `KubernetesMetricsServer`: Terraform's
-   create call fails with `expected ACTIVE, got DELETING`. Setting `override_existing = true` on
-   the addon (which allows taking over an addon already installed out-of-band) does **not** fix
-   this, that hypothesis was tested and disproven. No workaround has been found yet beyond
-   retrying `terraform apply`. Likely the same underlying enhanced-cluster provisioning
-   reliability issue as (1), though this has not been confirmed against OCI's internals.
+A virtual pool **create** can also hang: once the provider polled a create work request for about
+32 hours while the pool and its nodes had been `ACTIVE` within seconds, then failed with a 404 when
+the work request expired and left the pool tainted in state. Setting `timeouts.create` on virtual
+pools (for example `"30m"`) bounds that wait.
 
-Neither issue reproduces on `basic` clusters. If you hit either while testing, verify and clean up
-manually with the OCI CLI (`oci ce cluster list` / `node-pool list` / `virtual-node-pool list` /
-`network vcn list`, scoped to your compartment) rather than assuming `terraform test`'s automatic
-teardown succeeded.
+## Resolved: `KubernetesMetricsServer` failed with `expected ACTIVE, got DELETING`
+
+This was not a race. The add-on's install fails with "Need to install CertManager addon" (visible
+in the `ENABLE_ADDON` work request errors) when CertManager is installed at the same time. The
+module now creates CertManager first and the other add-ons after it.

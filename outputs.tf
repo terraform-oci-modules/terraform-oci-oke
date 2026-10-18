@@ -121,7 +121,7 @@ output "self_managed_node_pool_ids" {
 
 output "cluster_addons" {
   description = "OKE-managed addons by name. Maps to cluster_addons."
-  value       = { for k, a in oci_containerengine_addon.this : k => a }
+  value       = { for k, a in merge(oci_containerengine_addon.primary, oci_containerengine_addon.this) : k => a }
 }
 
 ################################################################################

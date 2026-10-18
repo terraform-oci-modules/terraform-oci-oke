@@ -114,6 +114,12 @@ variable "assign_public_ip_to_control_plane" {
   nullable    = false
 }
 
+variable "control_plane_security_attributes" {
+  description = "Zero Trust Packet Routing (ZPR) security attributes for the control plane endpoint, as flattened \"namespace.key.field\" keys, e.g. { \"oracle-zpr.sensitivity.value\" = \"low\", \"oracle-zpr.sensitivity.mode\" = \"enforce\" }. Leave unset (null) to send nothing. To remove attributes that were set, pass {}: removing the input keeps the current attributes, because the provider treats a missing value as \"keep\"."
+  type        = map(string)
+  default     = null
+}
+
 variable "control_plane_nsg_ids" {
   description = "Additional NSG OCIDs for the control plane endpoint. Maps to EKS additional_security_group_ids."
   type        = list(string)
@@ -213,9 +219,23 @@ variable "enable_oidc_token_auth" {
 
 variable "oidc_token_authentication_config" {
   description = "OIDC token authentication settings (issuer_url, client_id, ca_certificate, claims, etc.)."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = object({
+    issuer_url         = optional(string)
+    client_id          = optional(string)
+    ca_certificate     = optional(string)
+    signing_algorithms = optional(list(string))
+    groups_claim       = optional(string)
+    groups_prefix      = optional(string)
+    username_claim     = optional(string)
+    username_prefix    = optional(string)
+    configuration_file = optional(string)
+    required_claims = optional(list(object({
+      key   = string
+      value = string
+    })), [])
+  })
+  default  = {}
+  nullable = false
 }
 
 ################################################################################
@@ -406,30 +426,98 @@ variable "create_worker_nsg" {
 
 variable "control_plane_nsg_ingress_rules" {
   description = "Ingress rules for the created control plane NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol    = string
+    source      = string
+    source_type = optional(string, "CIDR_BLOCK")
+    description = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "control_plane_nsg_egress_rules" {
   description = "Egress rules for the created control plane NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol         = string
+    destination      = string
+    destination_type = optional(string, "CIDR_BLOCK")
+    description      = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "worker_nsg_ingress_rules" {
   description = "Ingress rules for the created worker NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol    = string
+    source      = string
+    source_type = optional(string, "CIDR_BLOCK")
+    description = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "worker_nsg_egress_rules" {
   description = "Egress rules for the created worker NSG, keyed by name."
-  type        = any
-  default     = {}
-  nullable    = false
+  type = map(object({
+    protocol         = string
+    destination      = string
+    destination_type = optional(string, "CIDR_BLOCK")
+    description      = optional(string)
+    tcp_options = optional(object({
+      min = number
+      max = number
+    }))
+    udp_options = optional(object({
+      min = number
+      max = number
+    }))
+    icmp_options = optional(object({
+      type = number
+      code = optional(number)
+    }))
+  }))
+  default  = {}
+  nullable = false
 }
 
 variable "control_plane_nsg_enable_recommended_rules" {
@@ -546,6 +634,9 @@ variable "node_pools" {
     volume_kms_key_id       = optional(string)
     pv_transit_encryption   = optional(bool, true)
     capacity_reservation_id = optional(string)
+    compute_cluster_id      = optional(string)
+    host_group_id           = optional(string)
+    security_attributes     = optional(map(string))
     preemptible_config = optional(object({
       enable                  = optional(bool, false)
       is_preserve_boot_volume = optional(bool, false)
@@ -555,7 +646,7 @@ variable "node_pools" {
     force_node_action       = optional(bool, false)
     network_launch_type     = optional(string)
     node_cycling = optional(object({
-      enabled             = optional(bool, false)
+      enabled             = optional(bool)
       maximum_surge       = optional(string, "1")
       maximum_unavailable = optional(string, "1")
       cycle_modes         = optional(list(string), ["BOOT_VOLUME_REPLACE"])
@@ -570,6 +661,11 @@ variable "node_pools" {
   }))
   default  = {}
   nullable = false
+
+  validation {
+    condition     = alltrue([for k, v in var.node_pools : v.eviction_grace_duration >= 0 && v.eviction_grace_duration <= 3600 && floor(v.eviction_grace_duration) == v.eviction_grace_duration])
+    error_message = "node_pools[*].eviction_grace_duration must be a whole number of seconds between 0 and 3600."
+  }
 }
 
 ################################################################################
@@ -592,6 +688,11 @@ variable "virtual_node_pools" {
       value  = optional(string)
       effect = optional(string, "NoSchedule")
     })), {})
+    node_cycling = optional(object({
+      enabled             = optional(bool)
+      maximum_surge       = optional(string, "1")
+      maximum_unavailable = optional(string, "0")
+    }), {})
     timeouts = optional(object({
       create = optional(string)
       update = optional(string)
@@ -602,6 +703,16 @@ variable "virtual_node_pools" {
   }))
   default  = {}
   nullable = false
+
+  validation {
+    condition = alltrue(flatten([
+      for p in values(var.virtual_node_pools) : [
+        for v in [p.node_cycling.maximum_surge, p.node_cycling.maximum_unavailable] :
+        can(regex("^([0-9]+|([0-9]|[1-9][0-9]|100)%)$", v))
+      ]
+    ]))
+    error_message = "virtual_node_pools[*].node_cycling.maximum_surge and maximum_unavailable must be a whole number or a percentage from 0% to 100%."
+  }
 }
 
 ################################################################################

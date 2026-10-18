@@ -4,14 +4,9 @@ Full-featured example: an **enhanced** OKE cluster with **VCN-native (npn)** pod
 networking, OIDC discovery (workload identity), an OKE-managed addon (CoreDNS),
 a managed node pool, and a virtual (serverless) node pool.
 
-> **Applying or destroying this example can fail with OCI platform errors
-> specific to `enhanced` clusters.** Addon creation (`KubernetesMetricsServer`
-> in particular) has been observed racing with OKE's own addon provisioning
-> on brand-new clusters (`expected ACTIVE, got DELETING`), and node pool /
-> virtual node pool deletion can hang in `NEEDS_ATTENTION` with no error
-> detail. Both are OCI-side issues, not something this module's config
-> controls. See [docs/testing.md](../../docs/testing.md#known-issue-enhanced-clusters-can-leave-resources-stuck-on-teardown)
-> for what to expect and the force-delete workaround if teardown gets stuck.
+> If a node pool delete gets stuck in `NEEDS_ATTENTION`, see
+> [docs/testing.md](../../docs/testing.md#node-pool-teardown) for the
+> force-delete workaround.
 
 ## Usage
 
@@ -27,7 +22,7 @@ terraform apply -var 'compartment_id=<your-compartment-ocid>'
 | Name | Version |
 | ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 6.0 |
+| <a name="requirement_oci"></a> [oci](#requirement\_oci) | >= 8.21.0 |
 
 ## Providers
 

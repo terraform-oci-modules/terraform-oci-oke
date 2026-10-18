@@ -23,8 +23,8 @@ Confirmed with `oci ce node-pool get`: after the apply, the pool's own
 `kubernetes-version` field read the new version, but both existing nodes (same names)
 still reported the old version and stayed `ACTIVE` throughout.
 
-This is the default, and it is intentional, not a bug: **`node_cycling` defaults to
-`enabled = false`.** New nodes (from a future scale-up) pick up the new template; nodes
+This is the default, and it is intentional, not a bug: **`node_cycling` is off unless
+you set `enabled = true`.** New nodes (from a future scale-up) pick up the new template; nodes
 that already exist keep running the old version/image until you either enable
 `node_cycling` or replace them yourself.
 
@@ -70,6 +70,15 @@ fire-and-forget background operation from Terraform's point of view.
 (`oci_containerengine_node_pool.autoscaled` in `modules/node-pool/main.tf`), so
 everything above applies to them too.
 
+### Turning cycling off again
+
+Set `enabled = false`; do not just remove `node_cycling`. The provider treats a missing
+cycling block as "keep the current setting", so removing it leaves cycling on. With
+`enabled = false` the module sends `is_node_cycling_enabled = false` (enhanced clusters
+only; basic clusters have no cycling to turn off). The same applies to virtual node
+pools, and to ZPR `security_attributes` / `control_plane_security_attributes`: pass `{}`
+to clear them.
+
 ## Self-managed node pools: no rolling-upgrade path exists
 
 `modules/self-managed-node-pool` is a plain `oci_core_instance_configuration` +
@@ -107,8 +116,31 @@ If this needs to be more automated later, it would need to be built into this mo
 (a `null_resource`/local-exec loop over `list-instances` + `terminate`, or similar) -
 nothing upstream provides it.
 
-## Virtual node pools: no version to bump
+## Virtual node pools: no version to bump, opt-in cycling
 
-`oci_containerengine_virtual_node_pool` has no `kubernetes_version` argument at all.
-OKE fully owns the virtual node image and Kubernetes version; there is nothing to
-configure or roll from this module's side.
+`oci_containerengine_virtual_node_pool` has no `kubernetes_version` argument (the
+provider exposes it as a read-only attribute). OKE fully owns the virtual node image
+and Kubernetes version, so there is no version to bump from this module's side.
+
+Changing a virtual pool's own configuration (pod shape, NSGs, subnets, labels,
+taints) updates the pool in place but, by default, leaves running virtual nodes as
+they are. Set `node_cycling` to have OKE replace them (requires provider
+`oracle/oci` 8.21.0 or later, which this module now requires):
+
+```hcl
+virtual_node_pools = {
+  vnp1 = {
+    # ...
+    node_cycling = {
+      enabled             = true
+      maximum_surge       = "1" # extra virtual nodes during the roll (count or %)
+      maximum_unavailable = "0" # nodes taken away at once (count or %)
+    }
+  }
+}
+```
+
+The defaults (`"1"` and `"0"`) are OCI's own, so `enabled = true` alone gives a
+roll that never drops below the pool's size. Unlike managed pools there is no
+`cycle_modes`. The cluster is always enhanced here, since virtual pools already
+require it.

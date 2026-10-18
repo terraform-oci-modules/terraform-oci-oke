@@ -10,7 +10,19 @@ module "node_pool" {
   source   = "./modules/node-pool"
   for_each = local.node_pools
 
-  depends_on = [oci_containerengine_cluster.this]
+  # The NSG rules too, not just the cluster: on destroy, pools must go first,
+  # while nodes can still reach the control plane to finish draining. Without
+  # this, Terraform deletes the rules in parallel with the pools and the drain
+  # never completes.
+  depends_on = [
+    oci_containerengine_cluster.this,
+    oci_core_network_security_group_security_rule.control_plane_ingress,
+    oci_core_network_security_group_security_rule.control_plane_egress,
+    oci_core_network_security_group_security_rule.control_plane_recommended,
+    oci_core_network_security_group_security_rule.worker_ingress,
+    oci_core_network_security_group_security_rule.worker_egress,
+    oci_core_network_security_group_security_rule.worker_recommended,
+  ]
 
   name           = each.key
   cluster_id     = local.cluster_id
@@ -58,6 +70,9 @@ module "node_pool" {
   volume_kms_key_id       = each.value.volume_kms_key_id
   pv_transit_encryption   = each.value.pv_transit_encryption
   capacity_reservation_id = each.value.capacity_reservation_id
+  compute_cluster_id      = each.value.compute_cluster_id
+  host_group_id           = each.value.host_group_id
+  security_attributes     = each.value.security_attributes
   preemptible_config      = each.value.preemptible_config
   eviction_grace_duration = each.value.eviction_grace_duration
   force_node_delete       = each.value.force_node_delete

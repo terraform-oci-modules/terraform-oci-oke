@@ -64,7 +64,7 @@ design positions.
 | ----------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
 | `create`                                              | `create`                                                                     |                                             |
 | `name`                                                | `name`                                                                       | the `cluster_name` **output** mirrors EKS's output name |
-| `kubernetes_version`                                  | `kubernetes_version`                                                         | OKE requires a `v` prefix, e.g. `v1.36.1`. Required here; EKS lets AWS pick the latest when null, the OCI provider does not |
+| `kubernetes_version`                                  | `kubernetes_version`                                                         | OKE requires a `v` prefix, e.g. `v1.36.4`. Required here; EKS lets AWS pick the latest when null, the OCI provider does not |
 | `region`                                              | provider `region`                                                            | OCI has no per-resource region argument     |
 | (no equivalent)                                       | `compartment_id`                                                             | OCI's account/region scoping analog, OKE-specific |
 | `tags`                                                | `tags` (freeform) + `defined_tags`                                           | OCI has two tag systems                     |
@@ -97,6 +97,7 @@ design positions.
 | `endpoint_public_access`                                        | `control_plane_is_public` + `assign_public_ip_to_control_plane` | OKE splits reachability from public-IP assignment          |
 | `endpoint_private_access`                                       | always on                                                      | OKE's private endpoint cannot be disabled                  |
 | `endpoint_public_access_cidrs`                                  | `control_plane_allowed_cidrs`                                  | applied through the created cluster NSG, not the cluster API |
+| (no equivalent)                                                 | `control_plane_security_attributes`                            | ZPR labels on the control plane endpoint, OCI-only         |
 | `additional_security_group_ids`                                 | `control_plane_nsg_ids`                                        |                                                           |
 | `create_security_group` / `security_group_*`                    | `create_control_plane_nsg` / `control_plane_nsg_*_rules`                   |                                                           |
 | `create_node_security_group` / `node_security_group_*`          | `create_worker_nsg` / `worker_nsg_*_rules`                     |                                                           |
@@ -134,13 +135,16 @@ submodule with this module's `node_pools` object type:
 | `pre_bootstrap_user_data`, `post_bootstrap_user_data`, `bootstrap_extra_args`, `cloudinit_pre_nodeadm` | `node_metadata` (managed) / `cloud_init` (self-managed), with cluster-wide defaults from the root `worker_metadata` | OKE managed pools accept metadata, not a rendered user-data template |
 | `timeouts`                                           | `timeouts` (`create`/`update`/`delete`, `delete` defaults `"75m"`) |                                                              |
 | `block_device_mappings`                              | `boot_volume_size`, `volume_kms_key_id`, `pv_transit_encryption` | OKE managed pools expose only the boot volume            |
-| `enable_monitoring`, `enclave_options`, `metadata_options`, `credit_specification`, `cpu_options`, `license_specifications`, `maintenance_options`, `network_performance_options`, `placement`, `instance_market_options`, `enable_efa_support` | none | EC2 launch-template surface with no `oci_containerengine_node_pool` counterpart |
+| `enable_monitoring`, `enclave_options`, `metadata_options`, `credit_specification`, `cpu_options`, `license_specifications`, `maintenance_options`, `network_performance_options`, `instance_market_options` | none | EC2 launch-template surface with no `oci_containerengine_node_pool` counterpart |
 | `create_iam_role` / `iam_role_*` / `node_iam_role_*` | none                                             | [class B](#gap-class-b-deliberate-scope-exclusions)          |
 | `node_repair_config`                                 | none                                             | no OKE equivalent; closest is the `NodeProblemDetector` add-on |
 | `force_update_version`                               | none                                             | no OKE equivalent                                            |
 | (no equivalent)                                      | `eviction_grace_duration`, `force_node_delete`, `force_node_action` | OKE drain-on-delete controls, OKE-specific. `force_node_action` maps to `is_force_action_after_grace_duration` |
 | (no equivalent)                                      | `max_pods_per_node`, `pod_subnet_id`, `pod_nsg_ids` | npn CNI only, OKE-specific                                |
 | (no equivalent)                                      | `placement_fds`                                  | OCI fault domains, no EC2 analog                             |
+| `placement` (placement group), `enable_efa_support`  | `compute_cluster_id`                             | an OCI compute cluster is the RDMA / GPU low-latency placement; single AD required (precondition) |
+| `placement.host_resource_group_arn`                  | `host_group_id`                                  | dedicated-host placement; single AD required, applied at pool creation |
+| (no equivalent)                                      | `security_attributes`                            | ZPR labels on each node's primary VNIC, OCI-only             |
 | (no equivalent)                                      | `network_launch_type`                            | advanced provider-validated override, OKE-specific           |
 
 ## Output mapping

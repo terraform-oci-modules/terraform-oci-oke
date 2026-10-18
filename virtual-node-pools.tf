@@ -10,7 +10,19 @@ module "virtual_node_pool" {
   source   = "./modules/virtual-node-pool"
   for_each = local.virtual_node_pools
 
-  depends_on = [oci_containerengine_cluster.this]
+  # The NSG rules too, not just the cluster: on destroy, pools must go first,
+  # while nodes can still reach the control plane to finish draining. Without
+  # this, Terraform deletes the rules in parallel with the pools and the drain
+  # never completes.
+  depends_on = [
+    oci_containerengine_cluster.this,
+    oci_core_network_security_group_security_rule.control_plane_ingress,
+    oci_core_network_security_group_security_rule.control_plane_egress,
+    oci_core_network_security_group_security_rule.control_plane_recommended,
+    oci_core_network_security_group_security_rule.worker_ingress,
+    oci_core_network_security_group_security_rule.worker_egress,
+    oci_core_network_security_group_security_rule.worker_recommended,
+  ]
 
   name           = each.key
   cluster_id     = local.cluster_id
@@ -31,9 +43,10 @@ module "virtual_node_pool" {
   nsg_ids       = length(each.value.nsg_ids) > 0 ? each.value.nsg_ids : local.worker_nsg_ids
   pod_nsg_ids   = length(each.value.pod_nsg_ids) > 0 ? each.value.pod_nsg_ids : var.pod_nsg_ids
 
-  node_labels = each.value.node_labels
-  taints      = each.value.taints
-  timeouts    = each.value.timeouts
+  node_labels  = each.value.node_labels
+  taints       = each.value.taints
+  node_cycling = each.value.node_cycling
+  timeouts     = each.value.timeouts
 
   freeform_tags = merge(var.tags, var.worker_tags, each.value.freeform_tags)
   defined_tags  = merge(var.defined_tags, var.worker_defined_tags, each.value.defined_tags)
