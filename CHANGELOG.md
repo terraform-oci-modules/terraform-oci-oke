@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.3.0...v0.4.0) (2026-10-18)
+
+### Features
+
+* Lift the provider cap, add virtual node pool cycling and node pool placement and ZPR attributes ([#7](https://github.com/terraform-oci-modules/terraform-oci-oke/issues/7)) ([8f977e3](https://github.com/terraform-oci-modules/terraform-oci-oke/commit/8f977e319aa696502b7fa3fc8afc28a91dfb818a))
+
 ## [0.3.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.2.0...v0.3.0) (2026-08-22)
 
 ### Features
