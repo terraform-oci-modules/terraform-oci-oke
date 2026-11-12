@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.4.0...v0.4.1) (2026-11-12)
+
+### Bug Fixes
+
+* Republish 0.4.0 so the Terraform Registry can download it ([#8](https://github.com/terraform-oci-modules/terraform-oci-oke/issues/8)) ([6aad0d2](https://github.com/terraform-oci-modules/terraform-oci-oke/commit/6aad0d240cf9b0b2bd0fc51e8c0582f34a0b641e))
+
 ## [0.4.0](https://github.com/terraform-oci-modules/terraform-oci-oke/compare/v0.3.0...v0.4.0) (2026-10-18)
 
 ### Features
